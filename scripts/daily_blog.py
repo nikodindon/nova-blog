@@ -97,6 +97,20 @@ def get_git_today(repo_path, day):
     commits = []
     if not repo_path.exists():
         return commits
+    # Resolve GitHub remote URL
+    github_url = ""
+    try:
+        remote_result = subprocess.run(
+            ["git", "remote", "get-url", "origin"],
+            capture_output=True, text=True, timeout=5, cwd=repo_path
+        )
+        remote = remote_result.stdout.strip()
+        if remote.startswith("https://github.com/"):
+            github_url = remote.rstrip(".git")
+        elif remote.startswith("git@github.com:"):
+            github_url = "https://github.com/" + remote.split(":")[1].rstrip(".git")
+    except Exception:
+        pass
     try:
         result = subprocess.run(
             ["git", "log", f"--since={day} {DAY_START_HOUR}:00",
@@ -109,12 +123,14 @@ def get_git_today(repo_path, day):
                 continue
             parts = line.split("|")
             if len(parts) >= 4:
+                commit_hash = parts[0][:7]
                 commits.append({
                     "repo": repo_path.name,
-                    "hash": parts[0][:7],
+                    "hash": commit_hash,
                     "message": parts[1],
                     "author": parts[2],
                     "date": parts[3][:10],
+                    "url": f"{github_url}/commit/{commit_hash}" if github_url else "",
                 })
     except Exception:
         pass
@@ -174,7 +190,10 @@ def summarize_content(sessions_data, git_data, files_data, day):
         f"=== COMMITS GIT ===\n{git_data[:3000]}\n\n"
         f"=== FICHIERS ===\n{files_data[:2000]}\n\n"
         f"Écris le billet de blog en HTML, sans préambule, sans note de bas de page, "
-        f"sans signature, sans mention 'IA'."
+        f"sans signature, sans mention 'IA'.\n\n"
+        f"LIENS GITHUB IMPORTANTS : le modèle sait que les commits sont liés à GitHub. "
+        f"Inclus les liens vers les commits et repos quand ils existent, par exemple : "
+        f"https://github.com/nikodindon/nova-blog/commit/HASH"
     )
 
     return ollama_chat([{"role": "system", "content": system_prompt},
@@ -392,7 +411,9 @@ def main():
     ) if unique_messages else "Aucun message aujourd'hui."
 
     git_text = "\n".join(
-        f"- [{c['repo']}] {c['hash']} — {c['message']}" for c in all_commits
+        (f"- [{c['repo']}] {c['hash']} — {c['message']}"
+         + (f"  → {c['url']}" if c.get('url') else ""))
+        for c in all_commits
     ) if all_commits else "Aucun commit aujourd'hui."
 
     files_text = "\n".join(
