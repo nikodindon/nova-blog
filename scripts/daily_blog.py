@@ -28,7 +28,15 @@ GIT_REPOS = [
 DAY_START_HOUR = 6
 YEAR = date.today().year
 
-# ── HELPERS ───────────────────────────────────────────────────────────────────
+# ── HELPERS ────────────────────────────────────────────────────────────────────
+
+def clean_chinese_text(text):
+    """Supprime les caractères chinois/japonais/coréens qui peuvent polluer le HTML généré."""
+    # CJK Unicode ranges: \u4e00-\u9fff (Chinese), \u3040-\u30ff (Japanese), \uac00-\ud7af (Korean)
+    text = re.sub(r'[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af\u3000-\u303f\uff00-\uffef]+', '', text)
+    # Supprime aussi les caracteres arabes et autres scripts exotiques qui n'ont rien à faire dans du HTML fr
+    text = re.sub(r'[\u0600-\u06ff\u0750-\u077f]+', '', text)  # Arabic
+    return text
 
 def ollama_chat(messages, model=MODEL):
     import urllib.request
@@ -397,6 +405,7 @@ def main():
     print("\n  ✍️  Génération de l'article avec MiniMax...")
     try:
         article = summarize_content(sessions_text, git_text, files_text, day)
+        article = clean_chinese_text(article)  # Nettoie les caracteres chinois/residus
         print("     → Article généré !")
     except Exception as e:
         print(f"     ✗ Erreur : {e}")
