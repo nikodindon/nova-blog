@@ -1,22 +1,18 @@
 #!/usr/bin/env python3
 """
-Nova-Blog — Génère un article de blog quotidien à partir de ton activité Hermès.
-Scrape : sessions Hermès, commits Git, fichiers modifiés → MiniMax génère l'article.
+Nova-Blog Backfill — Génère les articles pour les jours passés.
+Usage: python3 backfill.py [date_iso|all]
 """
 
 import json, os, sys, glob, subprocess, re
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from pathlib import Path
-
-# ── CONFIG ────────────────────────────────────────────────────────────────────
 
 OLLAMA_URL   = "http://localhost:11434"
 MODEL        = "minimax-m2.7:cloud"
 SESSIONS_DIR = Path.home() / ".hermes" / "sessions"
 BLOG_DIR     = Path(__file__).parent.parent
 ARTICLES_DIR  = BLOG_DIR / "articles"
-DATA_DIR      = BLOG_DIR / "data"
-TEMPLATES_DIR = BLOG_DIR / "templates"
 
 GIT_REPOS = [
     Path.home() / "Nova-Atlas",
@@ -26,33 +22,26 @@ GIT_REPOS = [
 ]
 
 DAY_START_HOUR = 6
-YEAR = date.today().year
+YEAR = 2026
 
-# ── HELPERS ────────────────────────────────────────────────────────────────────
 
 def clean_chinese_text(text):
-    """Supprime les caractères chinois/japonais/coréens qui peuvent polluer le HTML généré."""
-    # CJK Unicode ranges: \u4e00-\u9fff (Chinese), \u3040-\u30ff (Japanese), \uac00-\ud7af (Korean)
     text = re.sub(r'[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af\u3000-\u303f\uff00-\uffef]+', '', text)
-    # Supprime aussi les caracteres arabes et autres scripts exotiques qui n'ont rien à faire dans du HTML fr
-    text = re.sub(r'[\u0600-\u06ff\u0750-\u077f]+', '', text)  # Arabic
+    text = re.sub(r'[\u0600-\u06ff\u0750-\u077f]+', '', text)
     return text
+
 
 def ollama_chat(messages, model=MODEL):
     import urllib.request
     payload = {"model": model, "messages": messages, "stream": False, "temperature": 0.7}
     data = json.dumps(payload).encode()
     req = urllib.request.Request(
-        f"{OLLAMA_URL}/chat/completions", data=data,
+        f"{OLLAMA_URL}/api/chat", data=data,
         headers={"Content-Type": "application/json"},
     )
     with urllib.request.urlopen(req, timeout=120) as resp:
         result = json.load(resp)
     return result["message"]["content"]
-
-
-def get_today():
-    return date.today()
 
 
 def parse_session_file(path):
@@ -97,7 +86,6 @@ def get_git_today(repo_path, day):
     commits = []
     if not repo_path.exists():
         return commits
-    # Resolve GitHub remote URL
     github_url = ""
     try:
         remote_result = subprocess.run(
@@ -192,15 +180,12 @@ def summarize_content(sessions_data, git_data, files_data, day):
         f"Écris le billet de blog en HTML, sans préambule, sans note de bas de page, "
         f"sans signature, sans mention 'IA'.\n\n"
         f"LIENS GITHUB IMPORTANTS : le modèle sait que les commits sont liés à GitHub. "
-        f"Inclus les liens vers les commits et repos quand ils existent, par exemple : "
-        f"https://github.com/nikodindon/nova-blog/commit/HASH"
+        f"Inclus les liens vers les commits et repos quand ils existent."
     )
 
     return ollama_chat([{"role": "system", "content": system_prompt},
                          {"role": "user", "content": user_prompt}])
 
-
-# ── TEMPLATE ──────────────────────────────────────────────────────────────────
 
 ARTICLE_TEMPLATE = """<!DOCTYPE html>
 <html lang="fr">
@@ -319,7 +304,6 @@ body { background:var(--bg); color:var(--text); font-family:'Source Sans 3',sans
 def build_article_html(article_content, day, stats):
     html = ARTICLE_TEMPLATE
     html = html.replace("{{DATE}}", day.strftime("%d %B %Y"))
-    html = html.replace("{{DATE_ISO}}", day.isoformat())
     html = html.replace("{{CONTENT}}", article_content)
     html = html.replace("{{NB_MESSAGES}}", str(stats.get("messages", 0)))
     html = html.replace("{{NB_COMMITS}}", str(stats.get("commits", 0)))
@@ -357,25 +341,18 @@ def update_index(articles_dir):
     print(f"  ✓ index.html mis à jour ({len(article_files)} articles)")
 
 
-# ── MAIN ──────────────────────────────────────────────────────────────────────
-
-def main():
-    day = get_today()
-
-    # Vérifier si l'article existe déjà
+def generate_for_day(day):
+    """Génère un article pour un jour donné. Retourne True si créé, False si déjà existant."""
     article_path = ARTICLES_DIR / (day.isoformat() + ".html")
     if article_path.exists():
-        print(f"\n  Article déjà existant pour {day.isoformat()} —SKIP")
-        print(f"  → {article_path.name}")
-        update_index(ARTICLES_DIR)
-        return
+        print(f"  ⏭  {day.isoformat()} — déjà existant, skip")
+        return False
 
-    print(f"\n{'='*50}")
+    print(f"\n  {'='*50}")
     print(f"  Nova-Blog — Génération du {day.isoformat()}")
-    print(f"{'='*50}\n")
+    print(f"  {'='*50}\n")
 
-    # 1. Sessions Hermès
-    print("  📡 Lecture des sessions Hermès...")
+    # Collecte des messages de toutes les sessions
     all_messages = []
     session_files = sorted(SESSIONS_DIR.glob("*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True)
     for sf in session_files:
@@ -393,16 +370,14 @@ def main():
 
     print(f"     → {len(unique_messages)} messages collectés")
 
-    # 2. Git commits
-    print("  💻 Scan des commits Git...")
+    # Git commits
     all_commits = []
     for repo in GIT_REPOS:
         commits = get_git_today(repo, day)
         all_commits.extend(commits)
     print(f"     → {len(all_commits)} commits collectés")
 
-    # 3. Fichiers modifiés
-    print("  📁 Scan des fichiers travaillés...")
+    # Fichiers
     recent_files = get_recent_files(Path.home(), day)
     print(f"     → {len(recent_files)} fichiers collectés")
 
@@ -422,27 +397,58 @@ def main():
 
     stats = {"messages": len(unique_messages), "commits": len(all_commits), "files": len(recent_files)}
 
-    # 4. Génération
+    # Génération
     print("\n  ✍️  Génération de l'article avec MiniMax...")
     try:
         article = summarize_content(sessions_text, git_text, files_text, day)
-        article = clean_chinese_text(article)  # Nettoie les caracteres chinois/residus
+        article = clean_chinese_text(article)
         print("     → Article généré !")
     except Exception as e:
         print(f"     ✗ Erreur : {e}")
         article = f"<p>Erreur lors de la génération : {e}</p>"
 
-    # 5. Sauvegarde
+    # Sauvegarde
     ARTICLES_DIR.mkdir(exist_ok=True)
-    article_path = ARTICLES_DIR / (day.isoformat() + ".html")
     html = build_article_html(article, day, stats)
     article_path.write_text(html, encoding="utf-8")
-    print(f"\n  ✅ Article : {article_path.name}")
+    print(f"\n  ✅ Article créé : {article_path.name}")
+    return True
+
+
+def main():
+    target_days = []
+
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "all":
+            # Trouver toutes les dates avec des sessions
+            all_dates = set()
+            for sf in SESSIONS_DIR.glob("*.jsonl"):
+                try:
+                    dt = datetime.strptime(sf.name[:8], "%Y%m%d")
+                    all_dates.add(dt.date())
+                except Exception:
+                    continue
+            target_days = sorted(all_dates, reverse=True)
+        else:
+            # Date précise
+            try:
+                target_days = [date.fromisoformat(sys.argv[1])]
+            except Exception:
+                print(f"Date invalide : {sys.argv[1]}")
+                sys.exit(1)
+    else:
+        print("Usage: python3 backfill.py [date_iso|all]")
+        print("  python3 backfill.py 2026-04-18")
+        print("  python3 backfill.py all")
+        sys.exit(1)
+
+    print(f"\nDates à générer : {[d.isoformat() for d in target_days]}")
+
+    for day in target_days:
+        generate_for_day(day)
 
     update_index(ARTICLES_DIR)
-    print(f"\n{'='*50}")
-    print(f"  Done! → {article_path.name}")
-    print(f"{'='*50}\n")
+    print("\n  🎉 Backfill terminé !")
 
 
 if __name__ == "__main__":

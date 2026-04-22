@@ -39,9 +39,20 @@ class NovaBlogHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         path = self.path.strip("/")
 
-        # Route / → index.html
+        # / → redirect vers le dernier article
         if not path or path == "index.html":
+            return self.redirect_to_latest()
+
+        # /archives → page des archives (index)
+        if path == "archives":
             return self.serve_index()
+
+        # Liste des articles → /articles/
+        if path == "articles" or path.startswith("articles/"):
+            rest = path[len("articles/"):] if len(path) > len("articles/") else ""
+            if not rest:
+                return self.serve_index()
+            return super().do_GET()
 
         # Assets statiques
         if path.startswith("assets/"):
@@ -52,17 +63,21 @@ class NovaBlogHandler(http.server.SimpleHTTPRequestHandler):
         if article_match:
             return self.serve_article(article_match)
 
-        # Liste des articles → /articles/
-        if path == "articles" or path.startswith("articles/"):
-            # Retirer "articles/" pour servir le fichier
-            rest = path[len("articles/"):] if len(path) > len("articles/") else ""
-            if not rest:
-                return self.serve_index()
-            # Delegating to parent for static files
-            return super().do_GET()
+        # Inconnu → redirect vers le dernier article
+        return self.redirect_to_latest()
 
-        # Inconnu → index
-        return self.serve_index()
+    def redirect_to_latest(self):
+        """Trouve le dernier article et redirige."""
+        import glob
+        articles = sorted(Path(ARTICLES_DIR).glob("????-??-??.html"), reverse=True)
+        if articles:
+            latest = articles[0].stem  # e.g. "2026-04-22"
+            self.send_response(302)
+            self.send_header("Location", f"/{latest}")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+        else:
+            self.send_error(404, "No articles found")
 
     def _match_article(self, path):
         """Reconnaît /YYYY-MM-DD, YYYY-MM-DD.html ou /YYYY-MM-DD.html."""
@@ -83,10 +98,24 @@ class NovaBlogHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(404, "Index not found — run the blog generator first")
 
     def serve_article(self, date_str):
-        """Sert un article spécifique."""
+        """Sert un article spécifique avec nav Archives injectée."""
         article_path = ARTICLES_DIR / f"{date_str}.html"
         if article_path.exists():
-            self.send_path(article_path)
+            with open(article_path, "rb") as f:
+                content = f.read().decode("utf-8")
+            # Injecte "Archives" dans la topbar-nav si pas déjà présent
+            if 'href="/archives"' not in content:
+                content = content.replace(
+                    '<div class="topbar-nav">\n    <a href="/">Archives</a>\n  </div>',
+                    '<div class="topbar-nav">\n    <a href="/archives">Archives</a>\n  </div>'
+                )
+            content = content.encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(content)))
+            self.send_header("Cache-Control", "public, max-age=60")
+            self.end_headers()
+            self.wfile.write(content)
         else:
             self.send_error(404, f"Article {date_str} not found")
 

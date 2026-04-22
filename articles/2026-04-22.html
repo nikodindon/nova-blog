@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova-Blog — 22 April 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0f; --bg2:#111118; --bg3:#1a1a24; --border:#2a2a3a;
+  --accent:#e8612a; --accent2:#c44d1e; --gold:#c9a84c;
+  --text:#e2e2e8; --text-dim:#8888a0; --text-muted:#555568;
+  --radius:8px; --shadow:0 4px 24px rgba(0,0,0,0.5);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Source Sans 3',sans-serif; font-size:17px; line-height:1.7; }
+.topbar { position:sticky; top:0; z-index:100; background:var(--bg); border-bottom:1px solid var(--border); padding:14px 24px; display:flex; align-items:center; justify-content:space-between; backdrop-filter:blur(12px); }
+.topbar-brand { font-family:'Playfair Display',serif; font-size:1.4rem; font-weight:700; color:var(--accent); text-decoration:none; }
+.topbar-brand span { color:var(--gold); }
+.topbar-nav { display:flex; gap:20px; }
+.topbar-nav a { color:var(--text-dim); text-decoration:none; font-size:.9rem; font-weight:600; transition:color .2s; }
+.topbar-nav a:hover { color:var(--accent); }
+.container { max-width:780px; margin:0 auto; padding:48px 24px 80px; }
+.post-header { margin-bottom:40px; }
+.post-date { font-family:'JetBrains Mono',monospace; font-size:.8rem; color:var(--accent); letter-spacing:.1em; text-transform:uppercase; margin-bottom:12px; }
+.post-stats { display:flex; gap:24px; margin-top:20px; font-size:.85rem; color:var(--text-muted); }
+.post-stats span { display:flex; align-items:center; gap:6px; }
+.post-divider { border:none; border-top:1px solid var(--border); margin:36px 0; }
+.post-content h2 { font-family:'Playfair Display',serif; font-size:1.6rem; color:var(--text); margin:32px 0 14px; display:flex; align-items:center; gap:10px; }
+.post-content h3 { font-size:1.15rem; color:var(--accent); margin:20px 0 8px; }
+.post-content p { margin-bottom:16px; color:var(--text); }
+.post-content strong { color:var(--gold); }
+.post-content em { color:var(--text-dim); }
+.post-content ul { margin:12px 0 16px 24px; }
+.post-content li { margin-bottom:6px; color:var(--text); }
+.post-content code { font-family:'JetBrains Mono',monospace; font-size:.85em; background:var(--bg3); padding:2px 6px; border-radius:4px; color:var(--accent); }
+.post-content blockquote { border-left:3px solid var(--accent); padding-left:20px; margin:20px 0; color:var(--text-dim); font-style:italic; }
+.footer { text-align:center; padding:40px 24px; color:var(--text-muted); font-size:.85rem; border-top:1px solid var(--border); margin-top:60px; }
+.footer a { color:var(--accent); text-decoration:none; }
+</style>
+</head>
+<body>
+<nav class="topbar">
+  <a href="/" class="topbar-brand">Nova<span>-Blog</span></a>
+  <div class="topbar-nav">
+    <a href="/">Archives</a>
+  </div>
+</nav>
+<main class="container">
+  <header class="post-header">
+    <div class="post-date">22 April 2026</div>
+    <div class="post-stats">
+      <span>💬 2 messages</span>
+      <span>💻 0 commits</span>
+      <span>📁 0 fichiers</span>
+    </div>
+  </header>
+  <hr class="post-divider">
+  <div class="post-content">
+    
+
+<h2>📌 L'actu du jour</h2>
+
+<p>On est mercredi et le temps se décide enfin à se réchauffer par chez moi, ce qui est toujours un bon présage pour la motivation. Ce matin j'ai pris un café bien serré et j'ai checké mes flux RSS habituels. Pas grand chose de folichon côté actualité tech, quelques articles sur les dernières optimisations des modèles de fondation, mais rien qui m'ait vraiment scotché. J'ai aussi parcouru un thread intéressant sur Reddit où des gens discutaient de l'avenir des agents autonomes, avec des positions assez polarisées comme d'habitude. Le consensus semblait être que la hype va se calmer et qu'on va revenir à des cas d'usage concrets, ce qui me semble sage.</p>
+
+<p>Sinon dans le monde réel, j'ai suivi un peu l'actualité autour de la nouvelle version de Ollama qui est sortie récemment. Les perfs sur llama 4 semblent impressionnantes et je me tâte à tester ça dès que j'ai un moment. J'ai aussi vu passer une discussion sur les risques de déploiements massifs de modèles open source sans guardrails, ce qui me parle vachement dans mon travail actuel sur l'automatisation. Le décalage entre ce qu'on peut faire et ce qu'on devrait faire éthiquement, c'est un sujet qui me prend de plus en plus la tête.</p>
+
+<h2>💻 Ce qu'on a fait</h2>
+
+<p>Aujourd'hui niveau code c'était plutot calme, j'avoue. Pas de commit au compteur, le dépôt git peut se reposer. Par contre j'ai passé une bonne partie de la matinée à réfléchir avec Hermès sur l'architecture de la prochaine de mon système d'automatisation. On a échangé sur les patterns qu'il faudrait adopter pour gérer des flux de tâches plus complexes, et il m'a filé quelques idées interessantes sur la way on pourrait structurer les prompts pour que les agents LLM soient plus fiables dans leurs enchaînements d'actions.</p>
+
+<p>J'ai aussi pris le temps de mon environnement de travail, parce que soyons honnêtes, entre les configs abandonnées et les scripts oubliés, ça partait dans tous les sens. J'ai fait un peu de ménage dans les dépendances Python et j'ai mis à jour quelques packages qui traînaient depuis des plombes. Rien de glorieux mais ça fait du bien de revenir à un setup propre. Et puis parfois le plus important c'est de prendre du recul, de pas toujours courir après les features, mais de solidifier les fondations.</p>
+
+<h2>🎯 Objectifs et suite</h2>
+
+<p>Pour la suite, je veux vraiment avancer sur l'implémentation des stratégies de retry pour mon système. Quand un modèle LLM foire une réponse, il faut pouvoir relancer proprement sans tout casser. J'ai aussi identifié un bug un peu tricky dans le parsing des réponses structurées, que je dois absolument adresser avant de continuer. En parallèle je continue de me former sur tout ce qui est agentic frameworks parce que le domain évolue vite et si on reste sur ses acquis on se fait dépasser assez rapidement.</p>
+
+<p>Sur le plan pro, je dois aussi avancer sur la documentation de mes outils internes. J'ai cette sale manie de coder d'abord et documenter jamais, maisment il faut que je change ça si je veux que tout ça soit réutilisable sur le long terme. Hermès m'a proposé de m'aider à générer de la doc automatiquement depuis les commentaires du code, je vais tester cette approche dans les jours qui viennent. Si ça marche, ça pourrait me faire gagner un temps considérable et surtout me forcer à garder des commentaires propre dès le départ.</p>
+  </div>
+</main>
+<footer class="footer">
+  <p>Rédigé automatiquement par <a href="#">Nova-Blog</a> &middot; 2026</p>
+</footer>
+</body>
+</html>
