@@ -5,6 +5,7 @@ Scrape : sessions Hermès, commits Git, fichiers modifiés → MiniMax génère 
 """
 
 import json, os, sys, glob, subprocess, re
+import argparse
 from datetime import datetime, date
 from pathlib import Path
 
@@ -43,7 +44,7 @@ def ollama_chat(messages, model=MODEL):
     payload = {"model": model, "messages": messages, "stream": False, "temperature": 0.7}
     data = json.dumps(payload).encode()
     req = urllib.request.Request(
-        f"{OLLAMA_URL}/chat/completions", data=data,
+        f"{OLLAMA_URL}/api/chat", data=data,
         headers={"Content-Type": "application/json"},
     )
     with urllib.request.urlopen(req, timeout=120) as resp:
@@ -360,7 +361,18 @@ def update_index(articles_dir):
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 
 def main():
-    day = get_today()
+    parser = argparse.ArgumentParser(description="Nova-Blog daily generator")
+    parser.add_argument("date", nargs="?", default=None, help="Date ISO (ex: 2026-04-22). Si absent = today.")
+    args = parser.parse_args()
+
+    if args.date:
+        try:
+            day = date.fromisoformat(args.date)
+        except ValueError:
+            print(f"Date invalide : {args.date} — utiliser ISO format (YYYY-MM-DD)")
+            sys.exit(1)
+    else:
+        day = date.today()
 
     # Vérifier si l'article existe déjà
     article_path = ARTICLES_DIR / (day.isoformat() + ".html")
