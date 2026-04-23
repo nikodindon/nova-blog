@@ -365,6 +365,7 @@ def main():
     parser.add_argument("date", nargs="?", default=None, help="Date ISO (ex: 2026-04-22). Si absent = today.")
     args = parser.parse_args()
 
+    now = datetime.now()
     if args.date:
         try:
             day = date.fromisoformat(args.date)
@@ -372,7 +373,13 @@ def main():
             print(f"Date invalide : {args.date} — utiliser ISO format (YYYY-MM-DD)")
             sys.exit(1)
     else:
-        day = date.today()
+        # Si on est avant 6h du mat, on considère qu'on est encore
+        # dans la "nuit de transition" → générer pour la veille
+        from datetime import timedelta
+        if now.hour < DAY_START_HOUR:
+            day = date.today() - timedelta(days=1)
+        else:
+            day = date.today()
 
     # Vérifier si l'article existe déjà
     article_path = ARTICLES_DIR / (day.isoformat() + ".html")
