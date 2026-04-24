@@ -39,17 +39,55 @@ def clean_chinese_text(text):
     text = re.sub(r'[\u0600-\u06ff\u0750-\u077f]+', '', text)  # Arabic
     return text
 
-def ollama_chat(messages, model=MODEL):
-    import urllib.request
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+GROQ_MODEL   = "llama-3.3-70b-versatile"
+
+def ollama_chat(messages, model=MODEL, max_retries=5):
+    """Call Ollama (MiniMax cloud) with 429 retry. Falls back to Groq if all Ollama keys exhausted."""
+    import urllib.request, urllib.error, time
+
+    # ── Try Ollama (MiniMax) ──────────────────────────────────────────
     payload = {"model": model, "messages": messages, "stream": False, "temperature": 0.7}
     data = json.dumps(payload).encode()
     req = urllib.request.Request(
         f"{OLLAMA_URL}/api/chat", data=data,
         headers={"Content-Type": "application/json"},
     )
+    for attempt in range(max_retries):
+        try:
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                result = json.load(resp)
+            return result["message"]["content"]
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and attempt < max_retries - 1:
+                wait = (attempt + 1) * 15
+                print(f"     ⚠  Ollama 429 — retry {attempt+1}/{max_retries} dans {wait}s...")
+                time.sleep(wait)
+            else:
+                break  # non-429 or last attempt → try Groq
+
+    # ── Fallback: Groq (free Llama) ──────────────────────────────────
+    if not GROQ_API_KEY:
+        raise RuntimeError("GROQ_API_KEY not set in environment — cannot fallback")
+    print("     → Fallback Groq (llama-3.3-70b-versatile)...")
+    groq_payload = {
+        "model": GROQ_MODEL,
+        "messages": messages,
+        "stream": False,
+        "temperature": 0.7,
+    }
+    data = json.dumps(groq_payload).encode()
+    req = urllib.request.Request(
+        "https://api.groq.com/openai/v1/chat/completions",
+        data=data,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+        },
+    )
     with urllib.request.urlopen(req, timeout=120) as resp:
         result = json.load(resp)
-    return result["message"]["content"]
+    return result["choices"][0]["message"]["content"]
 
 
 def get_today():
