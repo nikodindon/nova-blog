@@ -51,7 +51,7 @@ body { background:var(--bg); color:var(--text); font-family:'Source Sans 3',sans
   <header class="post-header">
     <div class="post-date">24 April 2026</div>
     <div class="post-stats">
-      <span>💬 135 messages</span>
+      <span>💬 154 messages</span>
       <span>💻 1 commits</span>
       <span>📁 9 fichiers</span>
     </div>
@@ -60,27 +60,18 @@ body { background:var(--bg); color:var(--text); font-family:'Source Sans 3',sans
   <div class="post-content">
     
 
-<h2>📌 L'actu du jour</h2>
+<h2>📌 Activité du jour</h2>
+<p>Session matinale : L'utilisateur a demandé à plusieurs reprises le lancement de Nova-Atlas, la surveillance des nouveaux résumés dans data/articles et le contrôle qualité des résumés produits. L'assistant a lancé Nova-Atlas et collecté 260 articles. Un problème a été identifié : le fichier du jour n'apparaissait pas malgré la collecte. L'assistant a tenté de diagnostiquer le problème. Une session a été interrompue par une compaction de contexte. Des copies de sauvegarde des demandes ont été générées.</p>
 
-<p>Aujourd'hui on a fait du tri dans nos modèles LLM sur Nova-Atlas. Le projet avance bien mais je sentais que notre setup actuel méritait un peu de benchmark sauvage. On avait Mistral 7B qui tourne depuis un moment, mais je voulais vraiment comparer avec autre chose histoire de voir ce qui donnait les meilleurs résumés pour les articles tech. Du coup on s'est lancé dans le téléchargement de Llama 3 8B pour avoir un point de comparaison concret et pouvoir trancher entre les deux.</p>
+<p>Session nocturne : L'utilisateur a demandé à Hermes de discuter du test de modèles alternatifs pour Nova-Atlas. La possibilité de télécharger Llama3 8B via HuggingFace pour l'utiliser avec llama-server a été discutée. Le sujet a été traité à deux reprises dans des sessions distinctes avec demande de copie.</p>
 
-<p>Le téléchargement depuis HuggingFace s'est passé nickel, environ 5 Go pour la version Q5_K_M qui offre un bon compromis entre qualité et taille sur le disque. Le problème est venu ensuite quand j'ai voulu lancer un second serveur llama-server en parallèle avec Mistral qui tournait déjà. La RAM a refusé de cooperate, classique sur cette machine. J'ai dû tuer le processus Mistral pour libérer de la mémoire avant de pouvoir charger Llama 3 correctement. C'est le genre de galère qui fait perdre 20 minutes mais au moins ça a le mérite de rappeler que le CPU only c'est pas toujours rose quand on veut faire tourner plusieurs modèles en même temps.</p>
+<h2>💻 Projets/Travail</h2>
+<p>Un commit a été poussé sur nova-blog : correction du retry 429 et ajout d'un fallback Groq dans la fonction ollama_chat.</p>
+<p>Plusieurs articles existants ont été modifiés manuellement ou régénérés : les fichiers HTML des 14, 16, 18, 19, 20, 21 et 22 avril ont été mis à jour. L'index des articles (articles/index.html) a été modifié en conséquence. Le script scripts/daily_blog.py a été modifié.</p>
+<p>Une régénération de l'article du jour a été effectuée avec --force en début de nuit, pour vérifier que le résumé intègre correctement les informations sur llama-server et les 12 threads.</p>
 
-<h2>💻 Ce qu'on a fait</h2>
-
-<p>On a commencé par tester Llama 3 8B en Q5_K_M et le modèle fonctionnait mais le temps de génération sur CPU était problématique, environ 3 tokens par seconde avec des réponses qui peuvent monter à 800 ou 1400 tokens selon les articles. Ça donnait des latences de 4 à 7 minutes par résumé, clairement pas acceptable quand Nova-Atlas doit traiter 384 articles en production. Le timeout à 120 secondes claquait régulièrement et le flux de traitement s'arrêtait en plein milieu.</p>
-
-<p>J'ai ensuite testé plusieurs quantifications pour trouver un meilleur equilibre. IQ3_M était plus leger mais la qualite generatede en souffrait beaucoup, le modele produisait des debuts de phrase incomplets et mal structures. Le Q4_K_M s'est avere etre le meilleur compromis, environ 4.6 Go sur le disque et une qualite qui semble correcte pour les resumes en francais. Le serveur tourne maintenant sur le port 8081 et respond en environ 40 secondes pour les prompts habituels, c'est encore long mais ca passe le timeout a 240 secondes que j'ai configure pour cette session.</p>
-
-<p>Coté code, il y a eu un commit interessant sur nova-blog. Le fix sur le retry pour les erreurs 429 et le fallback vers Groq quand Ollama rencontre des problemes, ca renforce la robustesse du systeme. Quand le serveur principal ne repond pas correctement, le fallback permet de continuer a traiter les demandes au lieu de tout planter. C'est le genre de detail qui fait la difference en production.</p>
-
-<h2>🎯 Objectifs et suite</h2>
-
-<p>Maintenant que Llama 3 8B Q4_K_M est operationnel sur le port 8081, il faut vraiment comparer les resumes generes par les deux modeles sur un echantillon d'articles similaires. L'idee serait de lancer une batch de test avec les memes articles sur Mistral et Llama pour voir lequel donne les resultats les plus coherents et pertinents. Le delta de performance est important aussi, Llama 3 pourrait etre plus rapide ou plus precis selon le type de contenu technique.</p>
-
-<p>Si Llama 3 s'avere plus rapide et tout aussi fiable, on pourrait considerer de l'adopter comme modele principal pour Nova-Atlas et liberer Mistral pour d'autres taches. Le systeme de fallback sur Groq couvrant les cas limites, on aurait une bonne resilience globale. Il faudrait aussi verifier que la quantification Q4_K_M ne degrade pas la qualite des resumes sur des articles plus complexes ou avec du jargon technique specifique.</p>
-
-<p>Les articles publier aujourd'hui couvriront le benchmark entre les deux modeles sur des cas concrets. La documentation des temps de generation et de la qualite percue permettra de prendre des decisions informees pour la suite du projet. C'est le genre de travail iteratif qui fait avancer les choses correctement.</p>
+<h2>🎯 Suite</h2>
+<p>La réflexion sur les modèles alternatifs pour Nova-Atlas est en cours — Llama3 8B via HuggingFace llama-server est une piste identifiée.</p>
   </div>
 </main>
 <footer class="footer">

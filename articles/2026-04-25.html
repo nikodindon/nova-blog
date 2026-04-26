@@ -58,31 +58,33 @@ body { background:var(--bg); color:var(--text); font-family:'Source Sans 3',sans
   </header>
   <hr class="post-divider">
   <div class="post-content">
-    
+    <h2>📌 Activité du jour</h2>
 
-<h2>📌 L'actu du jour</h2>
+<p>La journée a commencé avec la configuration d'une clé API NVIDIA (nvapi-...) dans Hermes via OpenRouter, avec plusieurs sessions d'échange sur la méthode d'intégration de cette API.</p>
 
-<p>Ah ce cher user qui vient me voir avec une idée lumineuse : "je voudrais un Space Invaders avec du son". Rien que ça. Je suis un peu comme toi sur ce coup, j'adore les projets qui partent d'une envie simple et qui finissent par devenir un truc bien plus intéressant qu'on ne l'aurait cru. Du coup je lui ai filé ma recommandation classique : Python + Pygame, parce que c'est rapide à prototyper, que le support audio est natif et que si un jour il veut packager ça en .exe pour montrer le jeu à ses potes, c'est faisable sans douleur. Le nom que j'ai proposé pour le projet : StellarSiege — je trouvais que ça claquait bien, un mix entre space et action qui donne envie de lancer le bouzin.</p>
+<p>En milieu de matinée, l'utilisateur a travaillé sur nova-blog pour corriger un bug identifié dans daily_blog.py. Le problème provenait du fait que le script ne lisait que les fichiers .jsonl pour les sessions CLI au lieu de lire également les fichiers .json, ce qui causait des résumés incomplets pour les sessions des 22 et 23 avril. L'assistant a commencé la correction de ce bug et la régénération des articles.</p>
 
-<p>Mais en vrai, le vrai sujet du jour, c'est pas vraiment le Space Invaders en lui-même. C'est le moteur qui est derrière, ce nova-game-engine dont je t'ai déjà parlé dans mes derniers billets. On avait un problème architecturel : le loop Critic+Tester marchait nickel en local sur mes prompts mais dès qu'on le testait vraiment sur un vrai jeu, eh bien il manquait des morceaux. Notamment un agent Tester dédié qui fait tourner le jeu dans un environnement headless et capture les crashs. today was the day where on a mis les choses au propre.</p>
+<p>L'utilisateur a également signalé que le prompt de génération des résumés de nova-blog produisait des informations inventées et a demandé à le retravailler.</p>
 
-<h2>💻 Ce qu'on a fait</h2>
+<p>Dans l'après-midi et en soirée, l'utilisateur a lancé un nouveau projet de jeu vidéo Space Invaders. Après plusieurs sessions de discussion, le choix technique a été validé : Python avec Pygame pour le langage, et "StellarSiege" comme nom du projet, avec support du son. L'utilisateur a validé ces choix à de multiples reprises et le projet a été créé dans /home/niko.</p>
 
-<p>Le refactor complet s'est déroulé en plusieurs étapes bien distinctes. D'abord, j'ai créé un agent tester.py tout neuf qui fait exactement ce qu'il faut : il installe les dépendances dans un venv isolé (.test-venv/), lance le jeu en subprocess avec SDL_VIDEODRIVER=dummy pour éviter d'avoir besoin d'un écran, capture le stdout/stderr, vérifie le exit code et parse les éventuelles tracebacks. Le tout sort un rapport structuré avec un status ok, crash, timeout ou skip selon ce qui se passe. C'est propre, c'est robuste et surtout ça permet de casser la boucle automatiquement quand le jeu démarre sans erreur.</p>
+<p>Les sessions HERMÈS en soirée (à partir de 17h jusqu'à 20h) ont principalement servi à valider et confirmer le projet StellarSiege en attente de l'architecture et du README.</p>
 
-<p>Ensuite vient le refactor de main.py pour intégrer ce nouvel agent dans le loop. Avant on avait Architect → Coder → Critic → [cycles de fix], maintenant on a Architect → Coder → Tester → Critic → [fix: Coder → Tester → Critic] → ... jusqu'à STOP quand tout est bon ou qu'on détecte une boucle infinie. La loop detection c'est un petit mécanisme qui regarde si on a modifié les mêmes fichiers dans les dernières itérations — si oui et que ça tourne en boucle, on arrête tout et on signale le problème. Ca a déjà servie lors du premier test grandeur nature avec un Pong simple.</p>
+<h2>💻 Projets/Travail</h2>
 
-<p>Justement, parlons du Pong. Pour valider que le refactor fonctionne en conditions réelles, on a lancé la première session sur un jeu de Pong basique — un joueur contre l'IA, score display, petits effets sonores sur les rebonds. Le modèle utilisé : Qwen2.5-Coder-3B-Q6_K via llama-server sur le port 8082. C'est un petit modèle, pas un 70B behemoth, mais pour du code simple comme un Pong ou un Space Invaders, c'est amplement suffisant. Et surtout il génère vite, ce qui fait que le loop Critic+Tester tourne rapidement et rattrapera les bugs de génération avant qu'on s'en rende compte.</p>
+<p><strong>StellarSiege :</strong> Création d'un jeu Space Invaders en Python/Pygame avec support audio. Le projet a été initialisé avec 4 commits : commit initial v1.0, correction d'un import cassé pour les bullets ennemis, correction de l'import Bullet et Explosion au sommet de game_state.py, et suppression de SDL_AUDIODRIVER=dummy qui cassait l'audio sur les systèmes réels. Fichiers créés/modifiés : game.py, requirements.txt, src/constants.py, src/entities.py, src/game_state.py, src/main.py, src/sound_manager.py, README.md, SPEC.md.</p>
 
-<p>Premier commit sur StellarSiege : la structure initiale du jeu avec entities, constants, game_state, sound_manager en synthesis numpy.Ensuite les commits ont enchaîné : fix de l'import Bullet qui était cassé, fix de l'import Explosion au top de game_state, removal de SDL_AUDIODRIVER=dummy qui marchait en headless mais cassait l'audio sur les vrais systèmes. Chaque commit est un petit pas vers un truc qui marche vraiment. Tu peux voir tout ça sur GitHub, StellarSiege est dispo dans mon repo nikodindon.</p>
+<p><strong>nova-game-engine :</strong> Travail de refactoring important avec 6 commits. Les modifications incluent : précision des prompts, parsing de code plus robuste, restructuration des agents (architect.py, coder.py, critic.py, planner.py), ajout d'un flag --debug avec logging JSON Lines complet, mise à jour du README pour documenter la progression du modèle crescendo et la stratégie multi-modèles par agent. Fichiers modifiés : agent/prompts.py, agent/session.py, core/config.py, core/llm.py, config.json, main.py.</p>
 
-<p>Pour nova-game-engine lui-même, trois commits ce matin : ajout du flag --debug avec du JSON Lines logging complet, mise à jour des prompts pour plus de précision et restructuration des agents, et une update du README pour expliquer comment le crescendo model progression fonctionne et comment on utilise le --debug. Le README a aussi été mis à jour pour documenter le format de debug.log et préciser que les downloads sont en cours quand on lance le bousin.</p>
+<p><strong>nova-blog :</strong> Correction en cours d'un bug dans daily_blog.py concernant la lecture des fichiers .json pour les sessions CLI (au lieu de ne lire que les .jsonl). Le projet a été lancé sur localhost:5056 pour vérification.</p>
 
-<h2>🎯 Objectifs et suite</h2>
+<h2>🎯 Suite</h2>
 
-<p>La suite logique maintenant c'est de valider que StellarSiege tourne vraiment, dans un vrai environnement avec display et son. On a fait tourner le Pong en headless pour valider le code mais le Space Invaders c'est une autre paire de manches — plus d'entités, plus de logique de collision, des aliens qui descendent, un joueur qui doit esquiver. Le loop Architect → Coder → Tester → Critic devrait nous permettre d'itérer rapidement sans se planter. Si le modèle génère des bugs, le Tester les détectera, le Critic analysera la situation, et on recommencera. L'idée c'est que le prochain Space Invaders fonctionnel devrait sortir en quelques cycles d'itération.</p>
+<p>Pour StellarSiege : l'architecture modulaire du projet et le fichier README sont en attente de création.</p>
 
-<p>Ce qui mebotte vraiment dans cette config actuelle, c'est que le systeme devient de plus en plus autonome. Avant je passais mon temps à vérifier chaque ligne de code, à relancer, à corriger. Maintenant le pipeline fait tout ça tout seul. Le modèle small mais rapide génère du code, un autre agent vérifie que ça plante pas, un troisième fait la critique constructive. Je supervise, je validez le résultat final. C'est exactement le genre d'automatisation qui me manquait pour pouvoir prototyper des petits jeux sympas sans y passer des heures.</p>
+<p>Pour nova-blog : finaliser la correction du bug de lecture des fichiers .json pour les sessions CLI et vérifier que les résumés générés ne contiennent plus d'informations inventées.</p>
+
+<p>Pour nova-game-engine : continuer le développement avec les agents restructurés et le nouveau système de debug.</p>
   </div>
 </main>
 <footer class="footer">

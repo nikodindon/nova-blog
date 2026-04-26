@@ -58,36 +58,25 @@ body { background:var(--bg); color:var(--text); font-family:'Source Sans 3',sans
   </header>
   <hr class="post-divider">
   <div class="post-content">
-    <h2>📌 Activité du jour</h2>
+    
 
-<p>Session de travail principalement centrée sur le débogage et la correction du script <code>daily_blog.py</code> utilisé pour générer les résumés d'activité journaliers dans Nova-Blog.</p>
-
-<p>Le problème initial : en lan&#231;ant une vérification manuelle, l'article généré ne contenait que 7 messages au lieu de la totalit&#233; des interactions de la journ&#233;e. Apr&#232;s investigation, deux bugs identifi&#233;s :</p>
-
-<p>Premier bug — le script ne lisait que les fichiers <code>*.jsonl</code> alors que les sessions CLI du jour &#233;taient stock&#233;es en <code>.json</code>. Ces fichiers JSON n'ont pas de champ <code>timestamp</code> dans leurs messages (juste <code>role</code> et <code>content</code>), ce qui faisait que <code>filter_today_messages</code> les filtrait tous.</p>
-
-<p>Deuxi&#232;me bug — la logique <code>DAY_START_HOUR</code> con&#231;ue pour g&#233;n&#233;rer la veille quand le cron lance &#224; minuit. Avec cette r&#232;gle, si on lance manuellement &#224; 00h09, le script g&#233;n&#232;re pour hier (le 23) au lieu d'aujourd'hui (le 24). Cette logique a &#233;t&#233; corrig&#233;e dans un commit.</p>
-
-<p>Apr&#232;s correction, 302 messages collect&#233;s contre 7 avant fix.</p>
+<h2>📌 Activité du jour</h2>
+<p>La journée a commencé avec le clonage de Nova-Atlas et l'objectif d'ajouter le support de llama-server dans config.yaml avec installation de llama.cpp dans WSL. La gateway a été démarrée mais la connexion à Telegram échouait sur les IPs primary et fallback d'api.telegram.org.</p>
+<p>En début de soirée, le projet Icecast ne s'affichait toujours pas et l'utilisateur s'est demandé pourquoi Docker n'était pas installé. Plusieurs sessions ont porté sur la vérification des logs d'Icecast, la question de l'installation de Docker dans WSL (confirmée comme possible via version statically-built), et le souhait de tester les modèles Ollama déjà présents sous Windows (dans /mnt/c/Users/niko_/.ollama/) pour bénéficier de meilleures performances.</p>
+<p>Plusieurs sessions ont ensuite signalé que llama-server n'apparaissait pas dans htop, nécessitant une vérification des logs de la console principale de Nova-Atlas.</p>
+<p>En soirée avancée, le fichier requirements.txt a été pushé plusieurs fois avec l'ensemble des dépendances Python (edge-tts, PyYAML, requests, beautifulsoup4, lxml, flask, jinja2, markdown) conformément au README.</p>
+<p>En nuit, multiples pulls de Nova-Atlas ont tous été marqués avec un ERROR capturé par le background process de surveillance. Le debug a porté sur le parsing des fichiers .json sans timestamp, en extrayant la date du nom du fichier. Enfin, demande d'intégrer toutes les interactions CLI et Telegram dans le résumé, et de gérer les résumés déjà effectués dans la journée.</p>
 
 <h2>💻 Projets/Travail</h2>
-
-<p><strong>Nova-Blog</strong> — Corrections dans <code>scripts/daily_blog.py</code> :</p>
-<p>- <code>parse_session_file</code> adapt&#233; pour lire les deux formats (.jsonl et .json). Pour les .json sans timestamp, extraction de la date depuis <code>session_start</code> du fichier ou du nom du fichier comme fallback.</p>
-<p>- Scan des sessions &#233;tendu pour inclure <code>session_*.json</code> en plus de <code>*.jsonl</code>.</p>
-<p>Les modifications ont &#233;t&#233; pouss&#233;es sur GitHub.</p>
-
-<p><strong>Infrastructure locale</strong> — V&#233;rification des processus Python en cours :</p>
-<p>- PID 188 : <code>ollama serve</code> (serveur LLM local, port 11434)</p>
-<p>- PID 47620 : <code>llama-server</code> avec 12 threads, 87.9% RAM (10.7 GB)</p>
-<p>- PIDs 59272-59293 : <code>main.py --all</code> (Nova-Atlas : radio + web + news engine, 4 processus)</p>
-<p>- PID 59433 : <code>serve.py</code> (Nova-Blog, port 5056)</p>
-
-<p><strong>Crons Hermes</strong> — Les cron jobs sont g&#233;r&#233;s par Hermes (pas par le syst&#232;me), d'o&#249; le <code>crontab -l</code> vide. V&#233;rification &#224; 00h09 le 24 : la cron de 0h n'a pas d&#233;clench&#233; (<code>last_run_at: null</code>). Le daemon cron syst&#232;me tourne (PID 183) mais le scheduler Hermes n'a pas g&#233;n&#233;r&#233; l'article.</p>
+<p>nova-blog : deux commits pushés. Le premier (3d27752) ajoute le support de l'endpoint /api/chat d'Ollama et un argument date pour générer un article pour un jour précis. Le second (1884798) corrige la génération pour la veille quand le cron lance avant 6h du matin. Fichiers modifiés : scripts/daily_blog.py, articles/2026-04-16.html, articles/index.html.</p>
+<p>Nova-Atlas : plusieurs sessions de debugging autour du service Icecast manquant (empêchant le pipe ffmpeg de se connecter), problème à résoudre sans Docker ni sudo. Multiples pulls avec erreurs capturées en arrière-plan. Intégration du support de llama-server en cours.</p>
 
 <h2>🎯 Suite</h2>
-
-<p>Investiguer pourquoi le scheduler Hermes ne d&#233;clenche pas les jobs cron. Potentiellement le scheduler n'est pas actif ou un probl&#232;me de configuration'emp&#234;che l'ex&#233;cution automatique.</p>
+<p>Résoudre le problème du service Icecast sans utiliser Docker ni sudo pour restaurer le pipe ffmpeg.</p>
+<p>Debugger les erreurs ERROR capturées par le background process lors des pulls Nova-Atlas.</p>
+<p>Rendre llama-server visible et fonctionnel (actuellement non détecté dans htop).</p>
+<p>Finaliser l'intégration de llama-server dans config.yaml avec llama.cpp dans WSL.</p>
+<p>Tester les modèles Ollama depuis Windows pour comparer les performances.</p>
   </div>
 </main>
 <footer class="footer">

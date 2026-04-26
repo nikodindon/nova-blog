@@ -2,7 +2,7 @@
 
 Ton blog personnel automatisé — chaque soir, un article de blog est généré en résumant ta journée de travail. Sessions Hermès, commits Git, fichiers modifiés, tout est envoyé à un modèle de langue qui transforme ta journée en récit.
 
-**Exemple :** [22 avril 2026](http://localhost:5056/2026-04-22) — dernier article généré.
+**Exemple :** [25 avril 2026](http://localhost:5056/2026-04-25) — dernier article généré.
 
 ---
 
@@ -10,13 +10,14 @@ Ton blog personnel automatisé — chaque soir, un article de blog est généré
 
 Chaque soir à 20h (avec retries à 21h, 22h, 23h si besoin), le script `daily_blog.py` :
 
-1. **Scrape tes sessions Hermès** — lit tous les fichiers `.json` et `.jsonl` de la journée (CLI + Telegram)
-2. **Collecte les commits Git** — scan tes repos (`Nova-Atlas`, `hermes-agent`, `hermes-workspace`, `nova-blog`)
-3. **Liste les fichiers travaillés** — fichiers modifiés dans la journée via Git
-4. **Envoie tout à MiniMax Cloud** — modèle `minimax-m2.7:cloud` via le proxy Ollama Cloud
-5. **Génère l'article en HTML** — structuré en 3 sections (`📌 L'actu du jour`, `💻 Ce qu'on a fait`, `🎯 Objectifs et suite`)
-6. **Injecte dans le template** — et écrit `articles/YYYY-MM-DD.html`
-7. **Met à jour l'index** — `articles/index.html` liste tous les articles
+1. **Scrape tes sessions Hermès** — lit tous les fichiers `.json` et `.jsonl` de la journée (CLI + Telegram), groupées par fichier
+2. **Pré-résume chaque session** — si 5+ sessions, Ollama génère un résumé 1-2 phrases par session (par lots de 10 pour éviter la latence)
+3. **Collecte les commits Git** — scan tes repos (`Nova-Atlas`, `hermes-agent`, `hermes-workspace`, `nova-blog`, etc.)
+4. **Liste les fichiers travaillés** — fichiers modifiés dans la journée via Git
+5. **Envoie tout à MiniMax** — résumés de sessions + commits + fichiers → modèle `minimax-m2.7:cloud` via Ollama Cloud
+6. **Génère l'article en HTML** — structuré en 3 sections (`📌 Activité du jour`, `💻 Projets/Travail`, `🎯 Suite`)
+7. **Injecte dans le template** — et écrit `articles/YYYY-MM-DD.html`
+8. **Met à jour l'index** — `articles/index.html` liste tous les articles
 
 ---
 
@@ -123,6 +124,8 @@ Le script lit les sessions Hermès dans plusieurs formats :
 - **CLI** : fichiers `.jsonl` (un message par ligne)
 - **CLI** : fichiers `.json` (format single-JSON avec clé `messages` au top-level)
 - **Telegram** : fichiers `request_dump_*.json` (format nested avec `request.body.messages`)
+
+Les messages sont d'abord groupés par fichier session, puis pré-résumés par lots de 10 si 5+ sessions existent pour la journée. Cela garde le contexte manageable même avec des centaines de messages/jour.
 
 ---
 

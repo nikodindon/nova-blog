@@ -51,28 +51,40 @@ body { background:var(--bg); color:var(--text); font-family:'Source Sans 3',sans
   <header class="post-header">
     <div class="post-date">20 April 2026</div>
     <div class="post-stats">
-      <span>💬 419 messages</span>
+      <span>💬 443 messages</span>
       <span>💻 0 commits</span>
       <span>📁 0 fichiers</span>
     </div>
   </header>
   <hr class="post-divider">
   <div class="post-content">
-    
+    <h2>📌 Activité du jour</h2>
 
-<h2>📌 L'actu du jour</h2>
-<p>Salut la compagnie, on est lundi etilevel 20 avril 2026, et autant te dire que la journée a été sacrément chargée. On a commencé par finaliser la configuration de Signal pour les sessions Hermès, ce qui me fait plaisir je dois avouer. Scanner le QR code sur mon téléphone et pouvoir maintenant t'envoyer des messages depuis Signal directement, c'est quand même plus propre que de passer par un autre canal. Ça y est, la communication est fluidifiée, on peut maintenant échanger de manière sécurisée sans dépendre d'une interface web capricieuse.</p>
-<p>Mais le vrai morceaux de la journée, celui qui m'a pris pas mal de temps et pas mal de cheveux aussi, c'est le monitorage de Nova-Atlas. Le pipeline principal a redémarré et je surveillais ce qu'il faisait en temps réel, les doigts crispés sur le clavier. Le fetch de 400 articles était en cours, et le premier article commençait à être traité par Ollama. Le process ollama run tournait depuis 23h11, ce qui montrait que la chaîne de traitement fonctionnait correctement, mais les perfs n'étaient clairement pas au rendez-vous.</p>
-<p>Au fil de la surveillance, je me suis rendu compte d'un problème de verrou qui bloquait le fetch. Après 731 secondes d'attente, le message indiquait que le fetch attendait un verrou de fetch. Apparemment l'ancien cycle n'avait pas properly libéré ses ressources, ce qui arrive parfois quand un process se termine de manière abrupte. Nothing de dramatique, mais ça m'a forcé à investigate un peu plus loin que prévu initialement.</p>
+<p>La matinée a été consacrée à la configuration de Telegram sur Hermes. L'utilisateur a configuré le gateway Telegram avec succès, puis a demandé la révocation des anciens appairages WhatsApp encore présents dans le système. L'assistant a procédé à la révocation des 3 pairings WhatsApp existants et retiré la configuration WhatsApp du gateway Hermes.</p>
 
-<h2>💻 Ce qu'on a fait</h2>
-<p>Le flag hidethinking posé sur ollama run ne fonctionne manifestement pas avec Qwopus. Pourtant il est bien là dans l'appel, mais les tags think apparaissent quand même dans les summaries générés. J'ai vérifié la version d'Ollama, j'ai vérifié le nom du modèle, j'ai même testé en ligne de commande directe pour voir si c'était un problème de config ou de version. Le modèle met plus de 30 secondes même pour une question simple, ce qui est clairement un problème de perf WSL. Le flag désactive l'affichage mais le modèle Reflexion continue de réfléchir intensivement en arrière-plan, donc le temps de réponse reste catastrophique.</p>
-<p>Mais le vrai drama de la journée, celui qui m'a vraiment pris la tête, c'était le cleaner qui corrompt les articles. J'ai passé un bon moment à comprendre pourquoi mes résumés sortaient déformés, avec des mots tronqués et des parties manquantes. J'ai testé chaque étape du cleaner une par une pour isoler le coupable, et je l'ai trouvé. Step 4b était le méchant. Cette étape capturait toutes les paires de mots qui se ressemblent sans exiger qu'elles soient identiques. Tu veux un exemple ? La France matchait avec Lune contenant, tout ça parce que les deux paires commençaient et terminaient avec des mots similaires. Le pattern [,;:,.ion]* bouffait littéralement les lettres autour des mots matched, ce qui corrompait systématiquement le texte. Step 4c avait le même problème, amplifié encore.</p>
-<p>La solution était pourtant simple une fois le diagnostic posé. J'ai supprimé les steps 4b et 4c complètement et je les ai remplacés par des corrections ponctuelles très ciblées. Le cleaner original corrigeait quelques cas spécifiques comme effet, effet, qui devenait effet, mais détruisait tout le reste au passage. Le jeu n'en valait clairement pas la chandelle. Après modification, tous les articles propres sont restés intacts, et les 7 cas réels problématiques ne sont plus corrompus. Le cleaner est maintenant sain et ne touche plus aux articles qui n'ont pas besoin de correction.</p>
+<p>Durant la même période, l'utilisateur a consulté son profil Hermes (profil "default" avec modèle minimax-m2.7:cloud) et constaté que seul le fichier SOUL.md est présent parmi les fichiers .md du profil. Ce fichier sert de template par défaut sans persona personnalisé.</p>
 
-<h2>🎯 Objectifs et suite</h2>
-<p>La priorité maintenant, c'est de stabilize tout ça pour que Nova-Atlas tourne de manière fiable. Le problème de timeout à 30 secondes alors que le modèle met bien plus longtemps à répondre, il va faloir address ça. On a deux options sur la table, soit on augmente le timeout dans le code pour laisser plus de temps au modèle, soit on switch vers un modèle plus rapide ou plus léger. Nova-Atlas doit pouvoir traiter les 400 articles sans timeout, sinon le pipeline devient inutile. Je vais tester comment il se comporte sous charge réelle maintenant que le cleaner est fixed.</p>
-<p>Signal fonctionne, le cleaner est fixed, Nova-Atlas tourne. Pas mal pour une journée de lundi. Demain on continue.</p>
+<p>L'après-midi, plusieurs tentatives de configuration de Signal ont été effectuées après scan du QR code. Un problème bloquant a été identifié : signal-cli version 0.14.2 nécessite Java 23, incompatible avec Java 21 actuellement installé sur le serveur. Malgré les tentatives, Hermes ne reçoit aucun message Signal. Une tentative d'installation de Java 23 a échoué car le serveur ne propose pas ce fichier en téléchargement.</p>
+
+<p>En soirée (vers 19h32), le gateway Signal a été désactivé et redémarré pour tenter de résoudre les problèmes de configuration.</p>
+
+<p>En soirée tardive, l'utilisateur a continué la configuration Signal avec plusieurs ajustements : correction d'un problème de regex avec le pattern [,;:.ion]*, activation du flag --hidethinking sur les appels Ollama, et ajustements de la configuration ollama. L'utilisateur a demandé si l'envoi de messages Signal fonctionnait après le scan du QR code.</p>
+
+<p>Durant l'après-midi, l'utilisateur a confirmé que SearXNG fonctionne parfaitement sur le port 8081 sans CAPTCHA ni rate limiting.</p>
+
+<p>Des questions ont été posées sur le lancement du projet Nova-Atlas sans Docker.</p>
+
+<h2>💻 Projets/Travail</h2>
+
+<p>Aucune activité de développement hoy — aucun commit Git et aucun fichier modifié. Le travail s'est concentré sur la configuration et le débogage des gateways de messagerie (Telegram et Signal) ainsi que sur les consultations du profil Hermes.</p>
+
+<p>Le principal blocage technique de la journée concerne l'incompatibilité entre signal-cli 0.14.2 (nécessitant Java 23) et l'environnement Java 21 du serveur.</p>
+
+<h2>🎯 Suite</h2>
+
+<p>La configuration Signal nécessite la résolution du problème Java 23 — soit par installation de Java 23 sur le serveur, soit par recours à une alternative à signal-cli 0.14.2. Une meilleure solution alternative a été mentionnée lors d'une session sans être détaillée.</p>
+
+<p>L'utilisateur pourrait souhaite personnaliser son profil Hermes au-delà du template SOUL.md par défaut.</p>
   </div>
 </main>
 <footer class="footer">

@@ -285,6 +285,83 @@ def get_recent_files(home, day, max_files=20):
     return unique[:max_files]
 
 
+def summarize_sessions(sessions_by_file, day):
+    """
+    Résume les sessions par lots de 10 pour éviter 31 appels Ollama séquentiels.
+    Chaque lot → 1 appel Ollama qui résume 10 sessions en une passe.
+    """
+    import urllib.request, urllib.error, time as _time
+    total_sessions = len(sessions_by_file)
+
+    if total_sessions <= 4:
+        lines = []
+        for fname, msgs in sessions_by_file.items():
+            for m in msgs:
+                lines.append(f"[{m['role']}] {m['content']}")
+        return "\n".join(lines)
+
+    # Construire le texte brut par session
+    session_texts = {}
+    for fname, msgs in sessions_by_file.items():
+        lines = []
+        for m in msgs:
+            lines.append(f"[{m['role']}] {m['content']}")
+        session_texts[fname] = "\n".join(lines)
+
+    api_key, base_url = _ollama_key()
+    cfg = _get_cfg()
+    model = cfg.get("ollama", {}).get("model", "minimax-m2.7")
+
+    items = list(session_texts.items())
+    BATCH = 10
+    all_summaries = []
+
+    for i in range(0, len(items), BATCH):
+        batch = items[i:i+BATCH]
+        batch_text = "\n\n".join(
+            f"--- {fname} ---\n{text[:800]}" for fname, text in batch
+        )
+        prompt = (
+            "Tu dois résumer CHACUNE des sessions ci-dessous en exactement 1 phrase française, "
+            "sans préambule. Format : [filename] Résumé.\n\n"
+            f"SESSIONS:\n{batch_text}"
+        )
+        payload = {"model": model, "messages": [
+            {"role": "user", "content": prompt}
+        ], "stream": False, "temperature": 0.5}
+        data = json.dumps(payload).encode()
+        req = urllib.request.Request(
+            f"{base_url.rstrip('/')}/chat/completions",
+            data=data,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            },
+        )
+        for attempt in range(5):
+            try:
+                with urllib.request.urlopen(req, timeout=90) as resp:
+                    result = json.load(resp)
+                summary_block = result["choices"][0]["message"]["content"].strip()
+                all_summaries.append(summary_block)
+                break
+            except urllib.error.HTTPError as e:
+                if e.code == 429 and attempt < 4:
+                    wait = (attempt + 1) * 15
+                    _time.sleep(wait)
+                else:
+                    # Fallback: raw first 150 chars
+                    fallback = "\n".join(f"[{fn}] {txt[:150]}" for fn, txt in batch)
+                    all_summaries.append(fallback)
+                    break
+            except Exception:
+                fallback = "\n".join(f"[{fn}] {txt[:150]}" for fn, txt in batch)
+                all_summaries.append(fallback)
+                break
+
+    return "\n\n".join(all_summaries)
+
+
 def summarize_content(sessions_data, git_data, files_data, day):
     system_prompt = (
         f"Tu génères un résumé de l'activité journalière d'un développeur.\n\n"
@@ -293,21 +370,23 @@ def summarize_content(sessions_data, git_data, files_data, day):
         f"- Chaque paragraphe dans <p>, sections dans <h2>\n"
         f"- Sois FACTUEL et CONCIS — n'invente RIEN qui ne soit pas dans les données\n"
         f"- N'ajoute PAS de détails personnels (lieu, âge, situation) — utilise uniquement l'activité fournie\n"
-        f"- 300-500 mots maximum\n"
+        f"- COUVRE TOUTES LES SESSIONS de la journée — matin ET soir, CLI ET Telegram\n"
+        f"- Si plusieurs sessions/sujets, fais plusieurs paragraphes par section\n"
+        f"- N'impose PAS de limite de mots — couvre tout ce qui est pertinent\n"
         f"- PAS de conclusion типа 'En résumé'\n"
         f"- Date : {day.isoformat()}\n\n"
         f"STRUCTURE :\n"
         f"<h2>📌 Activité du jour</h2> ... paragraphes ...\n"
         f"<h2>💻 Projets/Travail</h2> ... paragraphes ...\n"
         f"<h2>🎯 Suite</h2> ... paragraphes ...\n\n"
-        f"CONSEIL : Si peu d'activité, dis-le simplement. Ne cherche pas à remplir avec des détails imaginés."
+        f"CONSEIL : Plus la journée est chargée, plus le résumé doit être détaillé."
     )
 
     user_prompt = (
-        f"Activité du {day.isoformat()} :\\n\\n"
-        f"=== SESSIONS HERMÈS ===\\n{sessions_data[:6000]}\\n\\n"
-        f"=== COMMITS GIT ===\\n{git_data[:3000]}\\n\\n"
-        f"=== FICHIERS MODIFIÉS ===\\n{files_data[:2000]}\\n\\n"
+        f"Activité du {day.isoformat()} — voici les sessions pré-résumées :\n\n"
+        f"=== SESSIONS HERMÈS (résumés) ===\n{sessions_data[:8000]}\n\n"
+        f"=== COMMITS GIT ===\n{git_data[:3000]}\n\n"
+        f"=== FICHIERS MODIFIÉS ===\n{files_data[:2000]}\n\n"
         f"Génère le résumé en HTML. Sois factuel. N'invente rien."
     )
 
@@ -507,32 +586,45 @@ def main():
     print(f"  Nova-Blog — Génération du {day.isoformat()}")
     print(f"{'='*50}\n")
 
-    # 1. Sessions Hermès
+    # 1. Sessions Hermès — grouper par fichier pour résumer par session
     print("  📡 Lecture des sessions Hermès...")
-    all_messages = []
-    # Include session_*.json, request_dump_*.json, and *.jsonl
     session_files = (
         sorted(list(SESSIONS_DIR.glob("session_*.json"))
                + list(SESSIONS_DIR.glob("request_dump_*.json"))
                + list(SESSIONS_DIR.glob("*.jsonl")),
               key=lambda p: p.stat().st_mtime, reverse=True)
     )
+
+    # Groupe : filename → list of messages
+    from collections import defaultdict
+    sessions_by_file = defaultdict(list)
     for sf in session_files:
         msgs = parse_session_file(sf)
         today_msgs = filter_today_messages(msgs, day)
-        all_messages.extend(today_msgs)
+        if today_msgs:
+            sessions_by_file[sf.name] = today_msgs
 
+    total_msgs = sum(len(v) for v in sessions_by_file.values())
+    print(f"     → {total_msgs} messages dans {len(sessions_by_file)} sessions")
+
+    # 2. Pré-résumé de chaque session (1-2 phrases) si beaucoup de sessions
+    print("  📝 Pré-résumé des sessions...")
+    session_summaries = summarize_sessions(sessions_by_file, day)
+    nb_sessions = len(sessions_by_file)
+    nb_lots = (nb_sessions + 9) // 10  # batch de 10
+    print(f"     → {nb_sessions} sessions résumées en {nb_lots} lots")
+
+    # Dédoublonnage des messages pour stats only
     seen_content = set()
     unique_messages = []
-    for msg in all_messages:
-        key = msg["content"][:80]
-        if key not in seen_content:
-            seen_content.add(key)
-            unique_messages.append(msg)
+    for msgs in sessions_by_file.values():
+        for msg in msgs:
+            key = msg["content"][:80]
+            if key not in seen_content:
+                seen_content.add(key)
+                unique_messages.append(msg)
 
-    print(f"     → {len(unique_messages)} messages collectés")
-
-    # 2. Git commits
+    # 3. Git commits
     print("  💻 Scan des commits Git...")
     all_commits = []
     for repo in GIT_REPOS:
@@ -545,9 +637,7 @@ def main():
     recent_files = get_recent_files(Path.home(), day)
     print(f"     → {len(recent_files)} fichiers collectés")
 
-    sessions_text = "\n".join(
-        f"[{m['role']}] {m['content']}" for m in unique_messages
-    ) if unique_messages else "Aucun message aujourd'hui."
+    sessions_text = session_summaries  # résumé par session au lieu de messages bruts
 
     git_text = "\n".join(
         (f"- [{c['repo']}] {c['hash']} — {c['message']}"

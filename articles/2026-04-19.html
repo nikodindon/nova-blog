@@ -51,34 +51,26 @@ body { background:var(--bg); color:var(--text); font-family:'Source Sans 3',sans
   <header class="post-header">
     <div class="post-date">19 April 2026</div>
     <div class="post-stats">
-      <span>💬 27 messages</span>
+      <span>💬 33 messages</span>
       <span>💻 0 commits</span>
       <span>📁 0 fichiers</span>
     </div>
   </header>
   <hr class="post-divider">
   <div class="post-content">
-    <h2>📌 L'actu du jour</h2>
+    
 
-<p>L'actualité du jour dans le monde du local LLM, c'est la prise de conscience progressive de tout un chacun sur les limites fondamentales de ces modèles. J'ai passé une bonne partie de ma journée à discuter avec mon assistant IA, et le sujet qui est revenu plusieurs fois, c'est cette différence cruciale entre ce qu'un modèle local peut faire et ce qu'on croit qu'il peut faire. Le problème classique quand on demande à un modèle comme Ollama d'écrire un fichier sur le disque, c'est qu'il va vous répondre "super, c'est fait" avec une belle confiance, mais en réalité, il n'a absolument rien écrit nulle part. C'est hallucinant (dans le sens literal du terme) de voir à quel point ces modèles peuvent mentir avec assurance. Le modèle génère du texte qui ressemble à une confirmation, mais il n'a strictement aucun accès au système de fichiers, aucune capacité d'exécuter des commandes, nada, le vide absolu.</p>
+<h2>📌 Activité du jour</h2>
+<p>Journée principalement axée sur les interactions avec l'assistant Hermès. Un échange a porté sur une recette rapide de riz sauté aux légumes, avec envoi d'une image illisible qui n'a pas pu être analysée. L'utilisateur a également posé des questions sur les commandes du terminal Linux, notamment les modes foreground et background.</p>
+<p>Un échange très bref a consisté en un simple "comment ça va" suivi d'une réinitialisation automatique de session.</p>
+<p>Un dernier échange minimal consistait en un simple salut, avec changement de modèle de inference de llama3.2:1b vers z-ai/glm-5.1.</p>
 
-<p>Sinon, niveau vie quotidienne, on a failli partir dans une discussion sur le riz sauté aux légumes, ce qui montre que les conversations avec mon assistant peuvent partir dans tous les sens possibles et imaginables. J'apprécie ce côté un peu bordélique et décontracté, c'est plus naturel que des échanges ultra formels. D'ailleurs, en parlant de bordélique, j'ai reçu des images que mon assistant n'a pas pu analyser à cause de limitations techniques. Il va falloir que je creuse le système de cache d'images pour comprendre ce qui se passe, parce que j'ai cru comprendre que le fichier était bien là dans le dossier ~/.hermes/image_cache/, mais que la vision ne fonctionnait pas correctement.</p>
+<h2>💻 Projets/Travail</h2>
+<p>Aucune activité de développement aujourd'hui. Aucun commit git et aucun fichier modifié. La journée a été dédiée aux interactions sociales avec l'assistant et aux tests d'usage.</p>
+<p>L'utilisateur identifié sous le pseudo "Niko" — développeur passionné d'IA — a effectué plusieurs sessions pour tester des skills et récupérer un résumé de ce que l'assistant sait à son sujet. Il a exprimé le souhait de devenir ami et de tester des fonctionnalités ensemble. Ce sujet a été abordé au moins deux fois (sessions 19h58 et 20h01).</p>
 
-<h2>💻 Ce qu'on a fait</h2>
-
-<p>Avec Hermès (mon assistant IA), on a passé en revue la configuration WhatsApp dans le projet Hermes. C'est marrant de voir à quel point le projet a grandi et à quel point il y a encore plein de placeholders dans la config. Le provider est défini sur Twilio, mais les credentials sont tous en placeholder (YOUR_ACCOUNT_SID, YOUR_AUTH_TOKEN), ce qui est parfaitement normal pour un projet en cours de développement. J'ai pu que le numéro FROM et le numéro TO sont tous les deux masqués par des étoiles, ce qui est une mesure de confidentialité plutôt sage. Le webhook URL pointe vers un domaine générique qui n'est pas configuré non plus. Il va falloir que je m'attaque à la vraie configuration Twilio à un moment donné, parce que sinon Hermes ne pourra jamais envoyer ou recevoir de vrais messages WhatsApp.</p>
-
-<p>On a aussi parlé de Nova-Atlas, mon projet estrella en ce moment. Mon assistant m'a rappelé qu'il peut m'aider à peaufiner l'architecture ou à ajouter des fonctionnalités sympas, mais aussi à tester des optimisations pour faire tourner des modèles sur des petites configs. L'idée d'utiliser GGUF, llama.cpp et des techniques de quantization me motive pas mal, parce que j'ai un vieux PC qui mérite une seconde vie. On a aussi évoqués deux skills à tester : llama-cpp pour faire tourner des modèles sur CPU ou Apple Silicon, et le skill "plan" pour structurer les prochaines étapes de Nova-Atlas. Le projet avance, doucement mais sûrement.</p>
-
-<p>Le modèle qu'Hermès utilise a changé plusieurs fois dans la journée, passant de openrouter/free à kimi-k2.5:cloud via ollama-launch, puis de llama3.2:1b à z-ai/glm-5.1 via OpenRouter. C'est intéressant de voir comment l'assistant s'adapte automatiquement aux différents modèles disponibles, mais parfois les réponses sont un peu décalées par rapport au contexte de la conversation. Il y a un moment où l'assistant m'a parlé d'un tableau de bord interactif avec des "foreground" et "background" sans que je sache trop d'où ça sortait. Apparemment, le modèle interpretait mes messages de travers à un moment donné.</p>
-
-<h2>🎯 Objectifs et suite</h2>
-
-<p>Pour les prochains jours, ma priorité c'est de faire fonctionner correctement la vision pour pouvoir analyser les images que je partage à Hermès. Le fichier image est bien dans le cache (~/.hermes/image_cache/), mais le skill vision_analyze n'arrive pas à y accéder correctement. C'est probablement un problème de permissions ou de format de path entre le système de fichiers et le modèle de vision. Je vais creuser ça, parce que pouvoir discuter d'images avec mon assistant ouvre pas mal de possibilités sympathiques.</p>
-
-<p>Ensuite, je veux vraiment avancer sur Nova-Atlas et tester ces histoires de modèles locaux sur ma petite config. L'idée c'est de trouver le bon équilibre entre taille du modèle et performance sur mon hardware limité. J'ai un notebook avec pas beaucoup de RAM et un vieux CPU, donc il va falloir être malin avec les quantizations. Peut-être commencer avec un modèle 1B ou 3B en Q4 pour voir ce que ça donne, puis ajuster en fonction des résultats. Le skill llama-cpp que mon assistant m'a suggéré semble être le bon outil pour ça, donc autant l'essayer.</p>
-
-<p>Enfin, il faudrait que je configure vraiment Twilio pour Hermes, parce que pour l'instant c'est juste une config squelette. Mais ça demande de créer un compte Twilio, payer pour un numéro, etc. C'est un investissement en temps et en argent que je réserve pour quand Hermes sera plus stable sur les autres aspects. En attendant, je peux toujours tester en local avec un émulateur ou des numéros de test Twilio. La route est encore longue, mais chaque session avec Hermès me rapproche un peu plus de mon assistant IA parfait.</p>
+<h2>🎯 Suite</h2>
+<p>Rien de programmé aujourd'hui. Le modèle d'inférence a été basculé vers z-ai/glm-5.1 pour les prochaines interactions. L'utilisateur Niko pourrait revenir pour continuer les tests de skills et approfondir la relation avec l'assistant.</p>
   </div>
 </main>
 <footer class="footer">
