@@ -1,0 +1,39 @@
+# Nova-Blog — Configuration
+# Copie ce fichier en config.yaml et remplace les valeurs.
+# config.yaml est gitignored (contient des clés privées).
+
+ollama:
+  # URL du serveur Ollama (local ou cloud)
+  base_url: "https://ollama.com/v1"
+  # Modèle par défaut
+  model: "minimax-m2.7"
+  # Clé API Ollama Cloud — laisse vide pour utiliser une clé locale via OLLAMA_API_KEY env var
+  api_key: ""
+
+minimax:
+  # Clé API MiniMax pour TTS (audio)
+  api_key: ""
+
+# Clés API Ollama Cloud fonctionnelles (auto-détectées par setup_keys.py)
+# Ne pas modifier manuellement — laisser les champs vides.
+ollama_cloud_keys:
+  - label: ""
+    api_key: ""
+    base_url: "https://ollama.com/v1"
+  - label: ""
+    api_key: ""
+    base_url: "https://ollama.com/v1"
+
+paths:
+  sessions_dir: ~/.hermes/sessions
+  articles_dir: ./articles
+
+git_repos:
+  - ~/Nova-Atlas
+  - ~/hermes-agent
+  - ~/hermes-workspace
+  - ~/nova-blog
+  - ~/StellarSiege
+  - ~/nova-game-engine
+  - ~/scanwiz
+  - ~/hermes-lite

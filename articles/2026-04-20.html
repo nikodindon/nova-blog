@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova-Blog — 20 April 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0f; --bg2:#111118; --bg3:#1a1a24; --border:#2a2a3a;
+  --accent:#e8612a; --accent2:#c44d1e; --gold:#c9a84c;
+  --text:#e2e2e8; --text-dim:#8888a0; --text-muted:#555568;
+  --radius:8px; --shadow:0 4px 24px rgba(0,0,0,0.5);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Source Sans 3',sans-serif; font-size:17px; line-height:1.7; }
+.topbar { position:sticky; top:0; z-index:100; background:var(--bg); border-bottom:1px solid var(--border); padding:14px 24px; display:flex; align-items:center; justify-content:space-between; backdrop-filter:blur(12px); }
+.topbar-brand { font-family:'Playfair Display',serif; font-size:1.4rem; font-weight:700; color:var(--accent); text-decoration:none; }
+.topbar-brand span { color:var(--gold); }
+.topbar-nav { display:flex; gap:20px; }
+.topbar-nav a { color:var(--text-dim); text-decoration:none; font-size:.9rem; font-weight:600; transition:color .2s; }
+.topbar-nav a:hover { color:var(--accent); }
+.container { max-width:780px; margin:0 auto; padding:48px 24px 80px; }
+.post-header { margin-bottom:40px; }
+.post-date { font-family:'JetBrains Mono',monospace; font-size:.8rem; color:var(--accent); letter-spacing:.1em; text-transform:uppercase; margin-bottom:12px; }
+.post-stats { display:flex; gap:24px; margin-top:20px; font-size:.85rem; color:var(--text-muted); }
+.post-stats span { display:flex; align-items:center; gap:6px; }
+.post-divider { border:none; border-top:1px solid var(--border); margin:36px 0; }
+.post-content h2 { font-family:'Playfair Display',serif; font-size:1.6rem; color:var(--text); margin:32px 0 14px; display:flex; align-items:center; gap:10px; }
+.post-content h3 { font-size:1.15rem; color:var(--accent); margin:20px 0 8px; }
+.post-content p { margin-bottom:16px; color:var(--text); }
+.post-content strong { color:var(--gold); }
+.post-content em { color:var(--text-dim); }
+.post-content ul { margin:12px 0 16px 24px; }
+.post-content li { margin-bottom:6px; color:var(--text); }
+.post-content code { font-family:'JetBrains Mono',monospace; font-size:.85em; background:var(--bg3); padding:2px 6px; border-radius:4px; color:var(--accent); }
+.post-content blockquote { border-left:3px solid var(--accent); padding-left:20px; margin:20px 0; color:var(--text-dim); font-style:italic; }
+.footer { text-align:center; padding:40px 24px; color:var(--text-muted); font-size:.85rem; border-top:1px solid var(--border); margin-top:60px; }
+.footer a { color:var(--accent); text-decoration:none; }
+</style>
+</head>
+<body>
+<nav class="topbar">
+  <a href="/" class="topbar-brand">Nova<span>-Blog</span></a>
+  <div class="topbar-nav">
+    <a href="/">Archives</a>
+  </div>
+</nav>
+<main class="container">
+  <header class="post-header">
+    <div class="post-date">20 April 2026</div>
+    <div class="post-stats">
+      <span>💬 419 messages</span>
+      <span>💻 19 commits</span>
+      <span>📁 20 fichiers</span>
+    </div>
+  </header>
+  <hr class="post-divider">
+  <div class="post-content">
+    
+
+<h2>📌 L'actu du jour</h2>
+
+<p>On a passé une bonne partie de la journée à débugger le pipeline Nova-Atlas qui génère les articles du blog automatiquement. Le souci venait du cleaner, ce module qui чисти les articles avant de les résumer avec Ollama. Le symptôme : les articles ressortaient corrompus, avec des bouts de texte manquants ou déformés. Un vrai mystère parce que certains articles passaient nickel et d'autres sortaient mutilés. J'ai passé des heures à isoler chaque étape du cleaner pour trouver le coupable, et finalement c'est le step 4b qui détruisait tout. Cette étape faisait de l'appariement flou entre les mots, genre elle matchait "La France" avec "Lune contenant" parce que les début et fin de mots se ressemblaient. Résultat : elle bouffait tout ce qui ressemblait vaguement à quelque chose. Une fois identifié, le fix était simple : virer les steps 4b et 4c et les remplacer par des corrections ponctuelles très ciblées.</p>
+
+<p>Au passage on a aussi reconfiguré Signal. J'ai scanné le QR code sur mon téléphone et maintenant les messages arrivent depuis Signal, ce qui est sacrément pratique pour recevoir les alertes sans avoir à vérifier Telegram ou autre. Le fait de tout centraliser sur Signal, c'est le genre de truc boring mais qui simplifie vraiment le workflow au quotidien.</p>
+
+<h2>💻 Ce qu'on a fait</h2>
+
+<p>On a mergé plusieurs commits sur nova-blog aujourd'hui. Le plus important selon moi, c'est le fix pour le retry sur les erreurs 429 avec fallback vers Groq dans ollama_chat. Le problème c'est qu'Ollama retourne parfois des 429 quand le serveur est saturé, et maintenant le code recommence automatiquement plutôt que de planter lamentablement. y a aussi le support pour générer un article pour un jour précis en passant un argument date, ce qui permet de backfill facilement les jours manqués. Le README est maintenant complet avec toute la stack documentée, le routing et les instructions de backfill, ce qui rend le projet beaucoup plus accessible.</p>
+
+<p>Pour le projet StellarSiege, on a corrigé deux bugs qui avaient l'air anodins mais qui auraient causé des gros problèmes. Le premier, c'est la suppression du SDL_AUDIODRIVER=dummy qui marchait sur notre système de test mais qui cassait le son sur les vraies machines. Le second, c'est un import foireux de Bullet et Explosion dans game_state.py quiempêchait le compile de fonctionner correctement. Des petits détails mais essentiels pour que le jeu tourne partout.</p>
+
+<p>Sur nova-game-engine, on a profondément restructuré les agents et la façon dont on parse le code. Le commit refactor: prompts precision, robust code parsing, restructured agents montre qu'on a gagné en fiabilité et en pertinence des réponses du modèle. On a aussi ajouté un flag --debug qui log tout en JSON Lines pour pouvoir tracer précisément ce qui se passe pendant l'exécution.</p>
+
+<p>Et y a eu un nouveau projet qui a poussé dans la nuit : ScanWiz, un scanner de documents en Python. Le commit initial est posé, on verra où ça nous mène mais ça a l'air prometteur comme outil pour digitaliser des docs.</p>
+
+<h2>🎯 Objectifs et suite</h2>
+
+<p>La priorité maintenant c'est d'optimiser les perfs d'Ollama. Le flag --hidethinking ne fonctionne pas comme prévu avec Qwopus, le modèle réfléchit toujours en arrière-plan même si on ne voit plus les tokens à l'écran. Et surtout, même une question simple prend 30+ secondes dans WSL, ce qui rend le pipeline extrêmement lent quand on traite 400 articles à la suite. On va probablement augmenter le timeout à 600 secondes comme suggéré, ou alors tester un autre modèle plus léger comme Nova-Atlas ou Llama.</p>
+
+<p>Le cleaner est maintenant stable et ne corrupt plus les articles. Ça veut dire qu'on peut reprendre le processing des 400 articles qui ont été fetch pendant la nuit. Je vais surveiller le watcher et m'assurer que les summaries se génèrent correctement, cette fois sans les tags de réflexion qui polluaient le texte. Si tout se passe bien, on aura un beau set d'articles propre pour le blog demain matin.</p>
+  </div>
+</main>
+<footer class="footer">
+  <p>Rédigé automatiquement par <a href="#">Nova-Blog</a> &middot; 2026</p>
+</footer>
+</body>
+</html>

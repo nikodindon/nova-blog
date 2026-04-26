@@ -2,16 +2,34 @@
 """
 Nova-Blog Backfill — Génère les articles pour les jours passés.
 Usage: python3 backfill.py [date_iso|all]
+
+Prérequis: python3 scripts/setup_keys.py (génère config.yaml.local)
 """
 
 import json, os, sys, glob, subprocess, re
 from datetime import datetime, date, timedelta
 from pathlib import Path
 
-OLLAMA_URL   = "http://localhost:11434"
-MODEL        = "minimax-m2.7:cloud"
+# ── Config — load from config.yaml.local (pas de clés en dur) ─────────────────
+SCRIPT_DIR = Path(__file__).parent
+sys.path.insert(0, str(SCRIPT_DIR))
+
+from config_loader import load_config, get_working_ollama_key
+
+_cfg = None
+
+def _get_cfg():
+    global _cfg
+    if _cfg is None:
+        _cfg = load_config()
+    return _cfg
+
+def _ollama_key():
+    return get_working_ollama_key(_get_cfg())
+
+# ── Paths ─────────────────────────────────────────────────────────────────────
 SESSIONS_DIR = Path.home() / ".hermes" / "sessions"
-BLOG_DIR     = Path(__file__).parent.parent
+BLOG_DIR     = SCRIPT_DIR.parent
 ARTICLES_DIR  = BLOG_DIR / "articles"
 
 GIT_REPOS = [
@@ -19,48 +37,120 @@ GIT_REPOS = [
     Path.home() / "hermes-agent",
     Path.home() / "hermes-workspace",
     Path.home() / "nova-blog",
+    Path.home() / "StellarSiege",
+    Path.home() / "nova-game-engine",
+    Path.home() / "scanwiz",
+    Path.home() / "hermes-lite",
 ]
 
 DAY_START_HOUR = 6
 YEAR = 2026
 
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
-def clean_chinese_text(text):
+def clean_chinese_text(text: str) -> str:
     text = re.sub(r'[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af\u3000-\u303f\uff00-\uffef]+', '', text)
-    text = re.sub(r'[\u0600-\u06ff\u0750-\u077f]+', '', text)
-    return text
+    return re.sub(r'[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af\u3000-\u303f\uff00-\uffef]+', '', text)
 
 
-def ollama_chat(messages, model=MODEL):
-    import urllib.request
+def ollama_chat(messages, model=None, max_retries=5):
+    """
+    Appelle Ollama Cloud avec retry automatique sur 429.
+    Lit la clé fonctionnelle depuis config.yaml.local au moment de l'appel.
+    """
+    import urllib.request, urllib.error, time
+    api_key, base_url = _ollama_key()
+    cfg = _get_cfg()
+    model = model or cfg.get("ollama", {}).get("model", "minimax-m2.7")
+
     payload = {"model": model, "messages": messages, "stream": False, "temperature": 0.7}
     data = json.dumps(payload).encode()
     req = urllib.request.Request(
-        f"{OLLAMA_URL}/api/chat", data=data,
-        headers={"Content-Type": "application/json"},
+        f"{base_url.rstrip('/')}/chat/completions",
+        data=data,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        },
     )
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        result = json.load(resp)
-    return result["message"]["content"]
+    for attempt in range(max_retries):
+        try:
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                result = json.load(resp)
+            return result["choices"][0]["message"]["content"]
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and attempt < max_retries - 1:
+                wait = (attempt + 1) * 15
+                print(f"     ⚠  429 — retry {attempt+1}/{max_retries} dans {wait}s...")
+                time.sleep(wait)
+            else:
+                body = e.read().decode(errors="replace")
+                raise RuntimeError(f"Ollama API error {e.code}: {body[:200]}")
+
 
 
 def parse_session_file(path):
+    """
+    Handles THREE session file formats:
+    1. session_*.json     — single JSON with 'messages' list, session_start at top
+    2. request_dump_*.json — same as above, also has 'messages' in request.body.messages
+    3. *.jsonl           — JSON Lines (legacy), one JSON object per line
+    """
     messages = []
     try:
         with open(path, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    obj = json.loads(line)
-                    if obj.get("role") in ("user", "assistant"):
-                        content = obj.get("content", "")
+            raw = f.read()
+
+        if not raw.strip():
+            return messages
+
+        # Try parsing as single-JSON first (session_*.json or request_dump_*.json)
+        try:
+            obj = json.loads(raw)
+            # Single-JSON format: has 'messages' key at top level
+            if "messages" in obj:
+                session_ts = obj.get("session_start", "")
+                for m in obj["messages"]:
+                    if m.get("role") in ("user", "assistant"):
+                        content = m.get("content", "")
                         if isinstance(content, str) and len(content) > 2:
-                            ts = obj.get("timestamp", "")
-                            messages.append({"role": obj["role"], "content": content[:500], "ts": ts})
-                except json.JSONDecodeError:
-                    continue
+                            ts = m.get("timestamp", session_ts)
+                            messages.append({"role": m["role"], "content": content[:500], "ts": ts})
+                return messages
+
+            # request_dump format: messages nested in request.body.messages
+            if "request" in obj and "body" in obj["request"]:
+                body = obj["request"]["body"]
+                if isinstance(body, dict) and "messages" in body:
+                    session_ts = obj.get("timestamp", "")
+                    for m in body["messages"]:
+                        if m.get("role") in ("user", "assistant"):
+                            content = m.get("content", "")
+                            if isinstance(content, str) and len(content) > 2:
+                                ts = m.get("timestamp", session_ts)
+                                messages.append({"role": m["role"], "content": content[:500], "ts": ts})
+                    return messages
+
+            return messages
+
+        except json.JSONDecodeError:
+            pass
+
+        # Fall back to JSONL format (one JSON per line)
+        for line in raw.strip().split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+                if obj.get("role") in ("user", "assistant"):
+                    content = obj.get("content", "")
+                    if isinstance(content, str) and len(content) > 2:
+                        ts = obj.get("timestamp", "")
+                        messages.append({"role": obj["role"], "content": content[:500], "ts": ts})
+            except json.JSONDecodeError:
+                continue
+
     except Exception:
         pass
     return messages
@@ -133,7 +223,7 @@ def get_recent_files(home, day, max_files=20):
         try:
             result = subprocess.run(
                 ["git", "log", f"--since={day} {DAY_START_HOUR}:00",
-                 "--name-only", "--pretty=format=", str(repo)],
+                 "--name-only", "--pretty=format:%n", str(repo)],
                 capture_output=True, text=True, timeout=10, cwd=repo
             )
             for fname in result.stdout.strip().split("\n"):
@@ -352,9 +442,14 @@ def generate_for_day(day):
     print(f"  Nova-Blog — Génération du {day.isoformat()}")
     print(f"  {'='*50}\n")
 
-    # Collecte des messages de toutes les sessions
+    # Collecte des messages de toutes les sessions (session_*.json, request_dump_*.json, *.jsonl)
     all_messages = []
-    session_files = sorted(SESSIONS_DIR.glob("*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True)
+    session_files = (
+        sorted(list(SESSIONS_DIR.glob("session_*.json"))
+               + list(SESSIONS_DIR.glob("request_dump_*.json"))
+               + list(SESSIONS_DIR.glob("*.jsonl")),
+              key=lambda p: p.stat().st_mtime, reverse=True)
+    )
     for sf in session_files:
         msgs = parse_session_file(sf)
         today_msgs = filter_today_messages(msgs, day)
@@ -420,14 +515,15 @@ def main():
 
     if len(sys.argv) > 1:
         if sys.argv[1] == "all":
-            # Trouver toutes les dates avec des sessions
+            # Trouver toutes les dates avec des sessions (session_*.json, request_dump_*.json, *.jsonl)
             all_dates = set()
-            for sf in SESSIONS_DIR.glob("*.jsonl"):
-                try:
-                    dt = datetime.strptime(sf.name[:8], "%Y%m%d")
-                    all_dates.add(dt.date())
-                except Exception:
-                    continue
+            for pattern in ["session_*.json", "request_dump_*.json", "*.jsonl"]:
+                for sf in SESSIONS_DIR.glob(pattern):
+                    try:
+                        dt = datetime.strptime(sf.name[:8], "%Y%m%d")
+                        all_dates.add(dt.date())
+                    except Exception:
+                        continue
             target_days = sorted(all_dates, reverse=True)
         else:
             # Date précise

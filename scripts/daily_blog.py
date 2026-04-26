@@ -9,12 +9,26 @@ import argparse
 from datetime import datetime, date
 from pathlib import Path
 
-# ── CONFIG ────────────────────────────────────────────────────────────────────
+# ── Config — load from config.yaml.local (pas de clés en dur) ─────────────────
+SCRIPT_DIR = Path(__file__).parent
+sys.path.insert(0, str(SCRIPT_DIR))
 
-OLLAMA_URL   = "http://localhost:11434"
-MODEL        = "minimax-m2.7:cloud"
+from config_loader import load_config, get_working_ollama_key
+
+_cfg = None
+
+def _get_cfg():
+    global _cfg
+    if _cfg is None:
+        _cfg = load_config()
+    return _cfg
+
+def _ollama_key():
+    return get_working_ollama_key(_get_cfg())
+
+# ── Paths ─────────────────────────────────────────────────────────────────────
 SESSIONS_DIR = Path.home() / ".hermes" / "sessions"
-BLOG_DIR     = Path(__file__).parent.parent
+BLOG_DIR     = SCRIPT_DIR.parent
 ARTICLES_DIR  = BLOG_DIR / "articles"
 DATA_DIR      = BLOG_DIR / "data"
 TEMPLATES_DIR = BLOG_DIR / "templates"
@@ -24,70 +38,57 @@ GIT_REPOS = [
     Path.home() / "hermes-agent",
     Path.home() / "hermes-workspace",
     Path.home() / "nova-blog",
+    Path.home() / "StellarSiege",
+    Path.home() / "nova-game-engine",
+    Path.home() / "scanwiz",
+    Path.home() / "hermes-lite",
 ]
 
 DAY_START_HOUR = 6
 YEAR = date.today().year
 
-# ── HELPERS ────────────────────────────────────────────────────────────────────
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
-def clean_chinese_text(text):
-    """Supprime les caractères chinois/japonais/coréens qui peuvent polluer le HTML généré."""
-    # CJK Unicode ranges: \u4e00-\u9fff (Chinese), \u3040-\u30ff (Japanese), \uac00-\ud7af (Korean)
+def clean_chinese_text(text: str) -> str:
+    """Supprime les caractères chinois/japonais/coréen/arabe qui polluent le HTML."""
     text = re.sub(r'[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af\u3000-\u303f\uff00-\uffef]+', '', text)
-    # Supprime aussi les caracteres arabes et autres scripts exotiques qui n'ont rien à faire dans du HTML fr
-    text = re.sub(r'[\u0600-\u06ff\u0750-\u077f]+', '', text)  # Arabic
+    text = re.sub(r'[\u0600-\u06ff\u0750-\u077f]+', '', text)
     return text
 
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-GROQ_MODEL   = "llama-3.3-70b-versatile"
 
-def ollama_chat(messages, model=MODEL, max_retries=5):
-    """Call Ollama (MiniMax cloud) with 429 retry. Falls back to Groq if all Ollama keys exhausted."""
+def ollama_chat(messages, model=None, max_retries=5):
+    """
+    Appelle Ollama Cloud avec retry automatique sur 429.
+    Lit la clé fonctionnelle depuis config.yaml.local au moment de l'appel.
+    """
     import urllib.request, urllib.error, time
+    api_key, base_url = _ollama_key()
+    cfg = _get_cfg()
+    model = model or cfg.get("ollama", {}).get("model", "minimax-m2.7")
 
-    # ── Try Ollama (MiniMax) ──────────────────────────────────────────
     payload = {"model": model, "messages": messages, "stream": False, "temperature": 0.7}
     data = json.dumps(payload).encode()
     req = urllib.request.Request(
-        f"{OLLAMA_URL}/api/chat", data=data,
-        headers={"Content-Type": "application/json"},
+        f"{base_url.rstrip('/')}/chat/completions",
+        data=data,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        },
     )
     for attempt in range(max_retries):
         try:
             with urllib.request.urlopen(req, timeout=120) as resp:
                 result = json.load(resp)
-            return result["message"]["content"]
+            return result["choices"][0]["message"]["content"]
         except urllib.error.HTTPError as e:
             if e.code == 429 and attempt < max_retries - 1:
                 wait = (attempt + 1) * 15
-                print(f"     ⚠  Ollama 429 — retry {attempt+1}/{max_retries} dans {wait}s...")
+                print(f"     ⚠  429 — retry {attempt+1}/{max_retries} dans {wait}s...")
                 time.sleep(wait)
             else:
-                break  # non-429 or last attempt → try Groq
-
-    # ── Fallback: Groq (free Llama) ──────────────────────────────────
-    if not GROQ_API_KEY:
-        raise RuntimeError("GROQ_API_KEY not set in environment — cannot fallback")
-    print("     → Fallback Groq (llama-3.3-70b-versatile)...")
-    groq_payload = {
-        "model": GROQ_MODEL,
-        "messages": messages,
-        "stream": False,
-        "temperature": 0.7,
-    }
-    data = json.dumps(groq_payload).encode()
-    req = urllib.request.Request(
-        "https://api.groq.com/openai/v1/chat/completions",
-        data=data,
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {GROQ_API_KEY}",
-        },
-    )
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        result = json.load(resp)
-    return result["choices"][0]["message"]["content"]
+                body = e.read().decode(errors="replace")
+                raise RuntimeError(f"Ollama API error {e.code}: {body[:200]}")
 
 
 def get_today():
@@ -95,22 +96,70 @@ def get_today():
 
 
 def parse_session_file(path):
+    """
+    Handles THREE session file formats:
+    1. session_*.json     — single JSON with 'messages' list, session_start at top
+    2. request_dump_*.json — same as above, also has 'messages' in request.body.messages
+    3. *.jsonl           — JSON Lines (legacy), one JSON object per line
+    """
     messages = []
     try:
         with open(path, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    obj = json.loads(line)
-                    if obj.get("role") in ("user", "assistant"):
-                        content = obj.get("content", "")
+            raw = f.read()
+
+        if not raw.strip():
+            return messages
+
+        # Try parsing as single-JSON first (session_*.json or request_dump_*.json)
+        try:
+            obj = json.loads(raw)
+            # Single-JSON format: has 'messages' key at top level
+            if "messages" in obj:
+                session_ts = obj.get("session_start", "")
+                for m in obj["messages"]:
+                    if m.get("role") in ("user", "assistant"):
+                        content = m.get("content", "")
                         if isinstance(content, str) and len(content) > 2:
-                            ts = obj.get("timestamp", "")
-                            messages.append({"role": obj["role"], "content": content[:500], "ts": ts})
-                except json.JSONDecodeError:
-                    continue
+                            # Per-message timestamp if available, else session_start
+                            ts = m.get("timestamp", session_ts)
+                            messages.append({"role": m["role"], "content": content[:500], "ts": ts})
+                return messages
+
+            # request_dump format: messages are nested in request.body.messages
+            # (already covered above via "messages" key check, but handle explicitly)
+            if "request" in obj and "body" in obj["request"]:
+                body = obj["request"]["body"]
+                if isinstance(body, dict) and "messages" in body:
+                    session_ts = obj.get("timestamp", "")
+                    for m in body["messages"]:
+                        if m.get("role") in ("user", "assistant"):
+                            content = m.get("content", "")
+                            if isinstance(content, str) and len(content) > 2:
+                                ts = m.get("timestamp", session_ts)
+                                messages.append({"role": m["role"], "content": content[:500], "ts": ts})
+                    return messages
+
+            # If single-JSON but no messages key, skip (not a session file)
+            return messages
+
+        except json.JSONDecodeError:
+            pass
+
+        # Fall back to JSONL format (one JSON per line)
+        for line in raw.strip().split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+                if obj.get("role") in ("user", "assistant"):
+                    content = obj.get("content", "")
+                    if isinstance(content, str) and len(content) > 2:
+                        ts = obj.get("timestamp", "")
+                        messages.append({"role": obj["role"], "content": content[:500], "ts": ts})
+            except json.JSONDecodeError:
+                continue
+
     except Exception:
         pass
     return messages
@@ -184,7 +233,7 @@ def get_recent_files(home, day, max_files=20):
         try:
             result = subprocess.run(
                 ["git", "log", f"--since={day} {DAY_START_HOUR}:00",
-                 "--name-only", "--pretty=format=", str(repo)],
+                 "--name-only", "--pretty=format:%n", str(repo)],
                 capture_output=True, text=True, timeout=10, cwd=repo
             )
             for fname in result.stdout.strip().split("\n"):
@@ -204,35 +253,28 @@ def get_recent_files(home, day, max_files=20):
 
 def summarize_content(sessions_data, git_data, files_data, day):
     system_prompt = (
-        f"Tu es un blogueur tech français. Tu écris le billet de blog "
-        f"quotidien d'un développeur français de 44 ans (Niko) qui bosse sur l'IA, "
-        f"les LLMs locaux et l'automatisation.\n\n"
+        f"Tu génères un résumé de l'activité journalière d'un développeur.\n\n"
         f"RÈGLES ABSOLUES :\n"
-        f"- Réponds UNIQUEMENT en HTML valide — chaque paragraphe dans une balise <p>, "
-        f"chaque section dans <h2>, les sous-sections dans <h3>\n"
-        f"- AUCUN liste à puces (ni <ul> ni <li>)\n"
-        f"- AUCUN astérisque *, tiret - ou autre caractere special de liste\n"
-        f"- Paragraphes lourds et denses — minimum 3-4 phrases par <p>\n"
-        f"- Ton chaleureux, personnel, un peu humoristique (tutoiement)\n"
-        f"- 600-800 mots au total\n"
-        f"- PAS de conclusion du type 'En résumé' ou 'Pour finir'\n"
+        f"- Réponds en HTML BRUT — pas de markdown, pas de bloc de code, pas de ```html\n"
+        f"- Chaque paragraphe dans <p>, sections dans <h2>\n"
+        f"- Sois FACTUEL et CONCIS — n'invente RIEN qui ne soit pas dans les données\n"
+        f"- N'ajoute PAS de détails personnels (lieu, âge, situation) — utilise uniquement l'activité fournie\n"
+        f"- 300-500 mots maximum\n"
+        f"- PAS de conclusion типа 'En résumé'\n"
         f"- Date : {day.isoformat()}\n\n"
-        f"STRUCTURE OBLIGATOIRE (en HTML) :\n"
-        f"<h2>📌 L'actu du jour</h2> ... paragraphes ...\n"
-        f"<h2>💻 Ce qu'on a fait</h2> ... paragraphes ...\n"
-        f"<h2>🎯 Objectifs et suite</h2> ... paragraphes ..."
+        f"STRUCTURE :\n"
+        f"<h2>📌 Activité du jour</h2> ... paragraphes ...\n"
+        f"<h2>💻 Projets/Travail</h2> ... paragraphes ...\n"
+        f"<h2>🎯 Suite</h2> ... paragraphes ...\n\n"
+        f"CONSEIL : Si peu d'activité, dis-le simplement. Ne cherche pas à remplir avec des détails imaginés."
     )
 
     user_prompt = (
-        f"Voici mon activité du {day.isoformat()} :\n\n"
-        f"=== SESSIONS HERMÈS ===\n{sessions_data[:6000]}\n\n"
-        f"=== COMMITS GIT ===\n{git_data[:3000]}\n\n"
-        f"=== FICHIERS ===\n{files_data[:2000]}\n\n"
-        f"Écris le billet de blog en HTML, sans préambule, sans note de bas de page, "
-        f"sans signature, sans mention 'IA'.\n\n"
-        f"LIENS GITHUB IMPORTANTS : le modèle sait que les commits sont liés à GitHub. "
-        f"Inclus les liens vers les commits et repos quand ils existent, par exemple : "
-        f"https://github.com/nikodindon/nova-blog/commit/HASH"
+        f"Activité du {day.isoformat()} :\\n\\n"
+        f"=== SESSIONS HERMÈS ===\\n{sessions_data[:6000]}\\n\\n"
+        f"=== COMMITS GIT ===\\n{git_data[:3000]}\\n\\n"
+        f"=== FICHIERS MODIFIÉS ===\\n{files_data[:2000]}\\n\\n"
+        f"Génère le résumé en HTML. Sois factuel. N'invente rien."
     )
 
     return ollama_chat([{"role": "system", "content": system_prompt},
@@ -434,7 +476,13 @@ def main():
     # 1. Sessions Hermès
     print("  📡 Lecture des sessions Hermès...")
     all_messages = []
-    session_files = sorted(SESSIONS_DIR.glob("*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True)
+    # Include session_*.json, request_dump_*.json, and *.jsonl
+    session_files = (
+        sorted(list(SESSIONS_DIR.glob("session_*.json"))
+               + list(SESSIONS_DIR.glob("request_dump_*.json"))
+               + list(SESSIONS_DIR.glob("*.jsonl")),
+              key=lambda p: p.stat().st_mtime, reverse=True)
+    )
     for sf in session_files:
         msgs = parse_session_file(sf)
         today_msgs = filter_today_messages(msgs, day)

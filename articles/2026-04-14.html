@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova-Blog — 14 April 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0f; --bg2:#111118; --bg3:#1a1a24; --border:#2a2a3a;
+  --accent:#e8612a; --accent2:#c44d1e; --gold:#c9a84c;
+  --text:#e2e2e8; --text-dim:#8888a0; --text-muted:#555568;
+  --radius:8px; --shadow:0 4px 24px rgba(0,0,0,0.5);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Source Sans 3',sans-serif; font-size:17px; line-height:1.7; }
+.topbar { position:sticky; top:0; z-index:100; background:var(--bg); border-bottom:1px solid var(--border); padding:14px 24px; display:flex; align-items:center; justify-content:space-between; backdrop-filter:blur(12px); }
+.topbar-brand { font-family:'Playfair Display',serif; font-size:1.4rem; font-weight:700; color:var(--accent); text-decoration:none; }
+.topbar-brand span { color:var(--gold); }
+.topbar-nav { display:flex; gap:20px; }
+.topbar-nav a { color:var(--text-dim); text-decoration:none; font-size:.9rem; font-weight:600; transition:color .2s; }
+.topbar-nav a:hover { color:var(--accent); }
+.container { max-width:780px; margin:0 auto; padding:48px 24px 80px; }
+.post-header { margin-bottom:40px; }
+.post-date { font-family:'JetBrains Mono',monospace; font-size:.8rem; color:var(--accent); letter-spacing:.1em; text-transform:uppercase; margin-bottom:12px; }
+.post-stats { display:flex; gap:24px; margin-top:20px; font-size:.85rem; color:var(--text-muted); }
+.post-stats span { display:flex; align-items:center; gap:6px; }
+.post-divider { border:none; border-top:1px solid var(--border); margin:36px 0; }
+.post-content h2 { font-family:'Playfair Display',serif; font-size:1.6rem; color:var(--text); margin:32px 0 14px; display:flex; align-items:center; gap:10px; }
+.post-content h3 { font-size:1.15rem; color:var(--accent); margin:20px 0 8px; }
+.post-content p { margin-bottom:16px; color:var(--text); }
+.post-content strong { color:var(--gold); }
+.post-content em { color:var(--text-dim); }
+.post-content ul { margin:12px 0 16px 24px; }
+.post-content li { margin-bottom:6px; color:var(--text); }
+.post-content code { font-family:'JetBrains Mono',monospace; font-size:.85em; background:var(--bg3); padding:2px 6px; border-radius:4px; color:var(--accent); }
+.post-content blockquote { border-left:3px solid var(--accent); padding-left:20px; margin:20px 0; color:var(--text-dim); font-style:italic; }
+.footer { text-align:center; padding:40px 24px; color:var(--text-muted); font-size:.85rem; border-top:1px solid var(--border); margin-top:60px; }
+.footer a { color:var(--accent); text-decoration:none; }
+</style>
+</head>
+<body>
+<nav class="topbar">
+  <a href="/" class="topbar-brand">Nova<span>-Blog</span></a>
+  <div class="topbar-nav">
+    <a href="/">Archives</a>
+  </div>
+</nav>
+<main class="container">
+  <header class="post-header">
+    <div class="post-date">14 April 2026</div>
+    <div class="post-stats">
+      <span>💬 212 messages</span>
+      <span>💻 19 commits</span>
+      <span>📁 20 fichiers</span>
+    </div>
+  </header>
+  <hr class="post-divider">
+  <div class="post-content">
+    <h2>📌 L'actu du jour</h2>
+
+<p>Salut à tous, on est mardi 14 avril 2026 et autant te dire que la journée a été bien chargée entre les échanges avec Hermès, mon assistant IA qui me cause en local sur ma machine, et les commits qui pleuvent sur GitHub. J'ai passé une bonne partie de l'après-midi à discuter avec lui comme si c'était un pote qui bosse dans le même bureau, sauf que lui, il a accès à mes fichiers et il peut me sortir les prix des cryptos en temps réel. Bitcoin à 75 464 $, Ethereum à 2 361 $, Solana à 85,81 $, tout ça sans lever le petit doigt. C'est quand même dingue ce qu'on peut faire maintenant avec un bon modèle qui tourne en local et une API CoinGecko derrière.</p>
+
+<p>Le plus marrant, c'est qu'on a échangé en vocal pendant un bon moment. J'ai demandé à Hermès de me répondre en texte quand je lui envoie des messages vocaux, ce qu'il a accepté sans problème. Du coup, je lui ai balancé des questions les unes après les autres, du prix du Solana à la météo de Saint-Gilles-Croix-de-Vie pour le lendemain. Il m'a sorti 16,5°C max avec de la bruine, ce qui ne m'étonne absolument pas pour un 15 avril sur la côte vendéenne. J'ai aussi vérifié Saint-Hilaire-de-Riez, le village juste à côté, même topo : frais et humide. Si vous cherchez le soleil, passez votre chemin.</p>
+
+<h2>💻 Ce qu'on a fait</h2>
+
+<p>Alors parlons serious business, aka les commits GitHub. Today was a solid day on nova-blog. J'ai corrigé plusieurs bugs bien chiants, notamment un problème de retry quand l'API retourne un code 429 (trop de requêtes) et un fallback vers Groq qui permet de ne pas rester bloqué si Ollama ne répond plus. Il y a aussi eu un fix pour la génération automatique de l'article de veille, parce que quand le cron se lance avant 6h du matin, le script calculait mal la date et générait un article pour le jour en cours au lieu de la veille. Petit détail mais crucial quand tu veux que ton blog se mette à jour correctement chaque matin.</p>
+
+<p>Sur StellarSiege, le jeu spatial sur lequel je bosse depuis quelques semaines, deux corrections importantes : d'abord, j'ai enlevé le flag SDL_AUDIODRIVER=dummy qui cassait le son sur les vraies machines (ouf, on va enfin pouvoir jouer avec du son), et ensuite j'ai corrigé un import foireux de la classe Bullet dans game_state.py qui empêchait les ennemis de tirer. C'est le genre de bug qui te fait perdre une heure à chercher pourquoi rien ne fonctionne alors que c'est juste une question d'import au bon endroit dans le fichier.</p>
+
+<p>Le projet nova-game-engine avance aussi, avec un refactoring complet des prompts pour plus de précision et une meilleure structuration des agents. J'ai ajouté un flag --debug qui permet de logger tout en JSON Lines pour débuguer plus facilement. Quant à scanwiz, c'est un nouveau venu dans la famille : un outil de scan de documents dont je vous parlerai plus en détail quand il aura pris un peu plus d'ampleur.</p>
+
+<h2>🎯 Objectifs et suite</h2>
+
+<p>Pour les jours à venir, je veux finaliser la partie backfill de nova-blog pour générer rétrospectivement tous les articles manquants et avoir une base propre. StellarSiege a besoin d'un bon coup de polish sur le game loop avant de pouvoir considerarse jouable de bout en bout. Et au niveau Hermès, je vais continuer à tester les échanges vocaux et voir jusqu'où on peut aller dans l'automatisation de petites tâches du quotidien. La météo, les cryptos, la gestion de fichiers, c'est déjà pas mal, mais j'aimerais bien lui faire piloter quelques autres outils du système.</p>
+  </div>
+</main>
+<footer class="footer">
+  <p>Rédigé automatiquement par <a href="#">Nova-Blog</a> &middot; 2026</p>
+</footer>
+</body>
+</html>

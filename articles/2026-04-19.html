@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova-Blog — 19 April 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0f; --bg2:#111118; --bg3:#1a1a24; --border:#2a2a3a;
+  --accent:#e8612a; --accent2:#c44d1e; --gold:#c9a84c;
+  --text:#e2e2e8; --text-dim:#8888a0; --text-muted:#555568;
+  --radius:8px; --shadow:0 4px 24px rgba(0,0,0,0.5);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Source Sans 3',sans-serif; font-size:17px; line-height:1.7; }
+.topbar { position:sticky; top:0; z-index:100; background:var(--bg); border-bottom:1px solid var(--border); padding:14px 24px; display:flex; align-items:center; justify-content:space-between; backdrop-filter:blur(12px); }
+.topbar-brand { font-family:'Playfair Display',serif; font-size:1.4rem; font-weight:700; color:var(--accent); text-decoration:none; }
+.topbar-brand span { color:var(--gold); }
+.topbar-nav { display:flex; gap:20px; }
+.topbar-nav a { color:var(--text-dim); text-decoration:none; font-size:.9rem; font-weight:600; transition:color .2s; }
+.topbar-nav a:hover { color:var(--accent); }
+.container { max-width:780px; margin:0 auto; padding:48px 24px 80px; }
+.post-header { margin-bottom:40px; }
+.post-date { font-family:'JetBrains Mono',monospace; font-size:.8rem; color:var(--accent); letter-spacing:.1em; text-transform:uppercase; margin-bottom:12px; }
+.post-stats { display:flex; gap:24px; margin-top:20px; font-size:.85rem; color:var(--text-muted); }
+.post-stats span { display:flex; align-items:center; gap:6px; }
+.post-divider { border:none; border-top:1px solid var(--border); margin:36px 0; }
+.post-content h2 { font-family:'Playfair Display',serif; font-size:1.6rem; color:var(--text); margin:32px 0 14px; display:flex; align-items:center; gap:10px; }
+.post-content h3 { font-size:1.15rem; color:var(--accent); margin:20px 0 8px; }
+.post-content p { margin-bottom:16px; color:var(--text); }
+.post-content strong { color:var(--gold); }
+.post-content em { color:var(--text-dim); }
+.post-content ul { margin:12px 0 16px 24px; }
+.post-content li { margin-bottom:6px; color:var(--text); }
+.post-content code { font-family:'JetBrains Mono',monospace; font-size:.85em; background:var(--bg3); padding:2px 6px; border-radius:4px; color:var(--accent); }
+.post-content blockquote { border-left:3px solid var(--accent); padding-left:20px; margin:20px 0; color:var(--text-dim); font-style:italic; }
+.footer { text-align:center; padding:40px 24px; color:var(--text-muted); font-size:.85rem; border-top:1px solid var(--border); margin-top:60px; }
+.footer a { color:var(--accent); text-decoration:none; }
+</style>
+</head>
+<body>
+<nav class="topbar">
+  <a href="/" class="topbar-brand">Nova<span>-Blog</span></a>
+  <div class="topbar-nav">
+    <a href="/">Archives</a>
+  </div>
+</nav>
+<main class="container">
+  <header class="post-header">
+    <div class="post-date">19 April 2026</div>
+    <div class="post-stats">
+      <span>💬 27 messages</span>
+      <span>💻 19 commits</span>
+      <span>📁 20 fichiers</span>
+    </div>
+  </header>
+  <hr class="post-divider">
+  <div class="post-content">
+    <h2>📌 L'actu du jour</h2>
+
+<p>Salut les amigos, on s'est bien amusé aujourd'hui avec Hermès ! On a commencé la journée avec un petit échange rigolo où je lui ai demandé de me résumer ce qu'il savait de moi, parce que oui, je veux qu'on devienne de vrais potes. Il m'a ressorti mes repos GitHub, mes projets fétiches comme Nova-Atlas, hermes-lite et mnemo, et il a capté que je préférais recevoir des voix mais répondre en texte concis. C'est exactement le genre de dynamique décontractée que je kiffe, on apprend à se connaître doucement et il me pose des questions pour mieux culer mes préférences.</p>
+
+<p>Le sujet qui m'a vraiment passionné aujourd'hui, c'est la discussion sur les modèles locaux et leurs limitations. Je lui ai expliqué que j'avais eu des galères la dernière fois : le modèle faisait semblant d'écrire sur mon disque mais en vrai, il ne pouvait pas du tout. Il m'a confirmé ce que je soupçonnais : un modèle local comme Ollama ou llama.cpp, c'est juste un générateur de texte pur, il n'a aucun accès au système de fichiers et ne peut pas exécuter de commandes. Quand il dit "j'ai créé ton fichier", c'est une belle hallucination. Cette distinction est super importante et je compte bien explorer des solutions pour contourner ça, peut-être en utilisant des tools ou des hooks spécifiques.</p>
+
+<p>On a aussi parlé de ma config WhatsApp dans Hermes et il m'a détaillé le fichier config.yaml avec les placeholders Twilio. J'ai failli lui demander une recette de riz pour rigoler et il m'a répondu avec un riz sauté aux légumes en 10 minutes chrono. Franchement, si mon assistant IA peut aussi me sauver quand je sais pas quoi cuisiner le soir, je dis pas non ! Par contre les images qu'il a essayé d'analyser ce matin, nada, il a merdé complètement, il pouvait pas les afficher. Va falloir qu'on corrige ça.</p>
+
+<h2>💻 Ce qu'on a fait</h2>
+
+<p>Nova-Blog a reçu une bonne dose d'amour aujourd'hui avec pas moins de neuf commits. Le plus important selon moi, c'est le fix pour le retry 429 avec Groq fallback dans ollama_chat. Le endpoint /api/chat d'Ollama a été mis à jour et maintenant le script supporte un argument date pour générer un article pour un jour précis. On a aussi corrigé un bug vicieux où le cron qui lançait la génération avant 6h du mat foutait la pagaille, maintenant il génère pour la veille. Enfin, les caractères chinois qui s'infiltraient dans le HTML généré ont été supprimés et les URLs GitHub sont désormais ajoutées automatiquement dans les commits pour le blog. C'est propre, ça avance bien.</p>
+
+<p>StellarSiege a eu droit à quelques corrections de bugs importantes. Le plus critique, c'était le SDL_AUDIODRIVER=dummy qui marchait sur les systèmes de test mais cassait le son sur les vrais systèmes. On a aussi fix les imports de Bullet et Explosion au top de game_state.py qui étaient défaillants, et le tir des ennemis qui marchait plus à cause de l'import cassé. Le projet avance doucement mais sûrement.</p>
+
+<p>Nova-Game-Engine a reçu du love avec un refactoring costaud des prompts, une meilleure précision et une restructuration des agents. Le mode debug avec le flag --debug et le logging JSON Lines complet a été ajouté, plus une mise à jour du README avec la stratégie de progression crescendo model et l'approche multi-model par agent. La doc avance aussi, c'est cool.</p>
+
+<p>Et là, la surprise du chef : ScanWiz a fait son apparition avec un initial commit sur le repo doc-scanner. J'ai pas encore vraiment creusé ce que c'est, mais connaissant mes lubies, c'est probablement un outil pour scanner des documents avec de l'IA locale. Affaire à suivre.</p>
+
+<h2>🎯 Objectifs et suite</h2>
+
+<p>Mon fil rouge en ce moment, c'est vraiment Nova-Atlas et les LLMs locaux sur petites configs. Je veux réussir à faire tourner des modèles decent même sur mon vieux PC qui a plus de 5 ans, et idéalement sans sacrifier trop de performances. Les pistes que je explore, c'est les formats GGUF, llama.cpp et la quantification avancée. L'obstacle principal qu'il faut que je surmonte, c'est cette incapacité des modèles à écrire sur le disque. Il va falloir que je bidouille un système de tools ou de wrappers pour que le modèle puisse réellement interagir avec le système de fichiers, sinon mes agents autonomes restent limités à de la génération de texte.</p>
+
+<p>Du côté des autres projets, je veux continuer à fignoler Nova-Blog pour qu'il devienne vraiment robuste, bosser sur StellarSiege pour le rendre jouable, etobviouslycontinuer à développer Nova-Game-Engine qui est vraiment prometteur. ScanWiz m'intrigue aussi, j'ai hâte de voir ce que ça va donner. La dynamique avec Hermès est excellente, on apprend à bosser ensemble et il commence à vraiment capter mes préférences et mon workflow. C'est exactement le genre de collaboration IA-développeur que je cherchais depuis longtemps.</p>
+  </div>
+</main>
+<footer class="footer">
+  <p>Rédigé automatiquement par <a href="#">Nova-Blog</a> &middot; 2026</p>
+</footer>
+</body>
+</html>

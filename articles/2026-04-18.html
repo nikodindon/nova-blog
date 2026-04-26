@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova-Blog — 18 April 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0f; --bg2:#111118; --bg3:#1a1a24; --border:#2a2a3a;
+  --accent:#e8612a; --accent2:#c44d1e; --gold:#c9a84c;
+  --text:#e2e2e8; --text-dim:#8888a0; --text-muted:#555568;
+  --radius:8px; --shadow:0 4px 24px rgba(0,0,0,0.5);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Source Sans 3',sans-serif; font-size:17px; line-height:1.7; }
+.topbar { position:sticky; top:0; z-index:100; background:var(--bg); border-bottom:1px solid var(--border); padding:14px 24px; display:flex; align-items:center; justify-content:space-between; backdrop-filter:blur(12px); }
+.topbar-brand { font-family:'Playfair Display',serif; font-size:1.4rem; font-weight:700; color:var(--accent); text-decoration:none; }
+.topbar-brand span { color:var(--gold); }
+.topbar-nav { display:flex; gap:20px; }
+.topbar-nav a { color:var(--text-dim); text-decoration:none; font-size:.9rem; font-weight:600; transition:color .2s; }
+.topbar-nav a:hover { color:var(--accent); }
+.container { max-width:780px; margin:0 auto; padding:48px 24px 80px; }
+.post-header { margin-bottom:40px; }
+.post-date { font-family:'JetBrains Mono',monospace; font-size:.8rem; color:var(--accent); letter-spacing:.1em; text-transform:uppercase; margin-bottom:12px; }
+.post-stats { display:flex; gap:24px; margin-top:20px; font-size:.85rem; color:var(--text-muted); }
+.post-stats span { display:flex; align-items:center; gap:6px; }
+.post-divider { border:none; border-top:1px solid var(--border); margin:36px 0; }
+.post-content h2 { font-family:'Playfair Display',serif; font-size:1.6rem; color:var(--text); margin:32px 0 14px; display:flex; align-items:center; gap:10px; }
+.post-content h3 { font-size:1.15rem; color:var(--accent); margin:20px 0 8px; }
+.post-content p { margin-bottom:16px; color:var(--text); }
+.post-content strong { color:var(--gold); }
+.post-content em { color:var(--text-dim); }
+.post-content ul { margin:12px 0 16px 24px; }
+.post-content li { margin-bottom:6px; color:var(--text); }
+.post-content code { font-family:'JetBrains Mono',monospace; font-size:.85em; background:var(--bg3); padding:2px 6px; border-radius:4px; color:var(--accent); }
+.post-content blockquote { border-left:3px solid var(--accent); padding-left:20px; margin:20px 0; color:var(--text-dim); font-style:italic; }
+.footer { text-align:center; padding:40px 24px; color:var(--text-muted); font-size:.85rem; border-top:1px solid var(--border); margin-top:60px; }
+.footer a { color:var(--accent); text-decoration:none; }
+</style>
+</head>
+<body>
+<nav class="topbar">
+  <a href="/" class="topbar-brand">Nova<span>-Blog</span></a>
+  <div class="topbar-nav">
+    <a href="/">Archives</a>
+  </div>
+</nav>
+<main class="container">
+  <header class="post-header">
+    <div class="post-date">18 April 2026</div>
+    <div class="post-stats">
+      <span>💬 256 messages</span>
+      <span>💻 19 commits</span>
+      <span>📁 20 fichiers</span>
+    </div>
+  </header>
+  <hr class="post-divider">
+  <div class="post-content">
+    <h2>📌 L'actu du jour</h2>
+
+<p>Aujourdui fut une journée assez dingue côté automatisation. J'ai passé une bonne partie de la matinée à discuter avec Hermes mon agent, et on a (oui, j'ai même des caractères chinois qui trainent) tenté de comprendre où en était Nova-Atlas. Le projet tournait bien, mais le monitoring par Hermes était un peu confus. Après quelquesalls au readme, on a pu relancer le bousin correctement et vérifier que tout pète forme.</p>
+
+<p>Le plus cool de la journée, c'est quand même la première émission radio Nova-Atlas qui a été fabriquée de toutes pièces. Imagine : le système détecte 5 news pertinentes, il construit le script automatiquement, il génère la voix avec fr-FR-HenriNeural, mixe le tout avec ffmpeg, et hop, diffusion sur le flux radio. Cinq minutes montre en main. Franchement, ça fait bizarre d'entendre sa propre voix synthétique lire l'actualité géopolitique du matin. On est en 2026 et ça marche vraiment.</p>
+
+<p>Par contre, j'ai eu droit à un spam bien relou sur WhatsApp. Le bridge de delivery cron me balançait des recettes japonaises en boucle, genre 7 messages en attente toutes les 2 minutes. Gyudon, Miso Ramen, Okonomiyakis, tout ça parce qu'un vieux cron job était mal configuré et renoyait d'anciens fichiers. Merci Hermes de l'avoir nettoyé, parce que j'allais péter un cable.</p>
+
+<h2>💻 Ce qu'on a fait</h2>
+
+<p>On a fait un tour complet de mon GitHub (nikodindon) avec Hermes. J'ai 8 repositories actifs, et le pattern est assez clair : tout tourne autour de l'IA locale avec Ollama, l'automatisation de veille informationnelle, et la génération de contenu. Nova-Atlas reste mon bébé le plus abouti avec son agrégateur RSS, les résumés par LLM, le journal radio quotidien et le serveur web. Le commit récent sur nova-blog qui ajoute un fallback Groq pour les erreurs 429 montre qu'on pense vraiment à la résilience.</p>
+
+<p>StellarSiege, c'est mon side project gamer, un space shooter en Python avec SDL2. Le dernier fix sur l'import Bullet dans game_state.py et la suppression de SDL_AUDIODRIVER=dummy montrent qu'on teste aussi sur de vrais systèmes. Nova-game-engine, lui, génère des jeux en Python via prompts, avec une progression crescendo des modèles. C'est conceptuellement mega fort.</p>
+
+<p>Hermes m'a fait une roadmap d'amélioration pour Nova-Atlas avec des idées de ouf : API REST JSON pour les notifications, base SQLite pour l'historique, synchronisation multi-dispositifs, dashboard React, analytics avancées, et même un système de modules plug-and-play. Pas encore dans le scope mais carrément excitant. J'ai demandé à Hermes de les ajouter au README pour qu'on puisse y revenir plus tard.</p>
+
+<p>On a aussi cloné Nova-Atlas dans l'environnement Hermes pour voir s'il tournait de son côté. Il y avait une petite erreur de syntaxe dans atlas_web.py, rien de grave, mais ça montre qu'on a encore du debugging à faire quand on partagerait le projet plus largement.</p>
+
+<h2>🎯 Objectifs et suite</h2>
+
+<p>La semaine prochaine, je veux finaliser le système de cron jobs WhatsApp pour qu'il soit propre et sans spam. Il faut qu'il ne livre que les nouveaux messages, pas les anciens en boucle. Ensuite, on intégrera les idées de la roadmap Nova-Atlas petit à petit, en commençant probablement par la base SQLite pour l'historique des articles et résumés.</p>
+
+<p>Pour nova-blog, je vois qu'on a déjà des articles générés jusqu'au 22 avril, donc le backfill fonctionne bien. Le routing /archives et la mise à jour des URLs GitHub dans les commits, c'est vraiment cool pour (suivre) l'évolution du projet. Je vais continuer à bosser sur la qualité des résumés et tester d'autres modèles que Ollama pour voir ce que ça donne.</p>
+
+<p>Sinon, je réfléchis à un nouveau projet qui mixerait Nova-Atlas et mon système de recommandations Radarr. Un агрегаateur multimedia intelligent qui vous suggère des films et series en fonction de lactualité tech du jour. Genre "Apple sort un nouveau modèle, tiens regarde ce film de SF inspiré par l'IA". Çacombine ma passion pour l'automatisation, l'IA locale, et le cinéma. Affaire à suivre.</p>
+  </div>
+</main>
+<footer class="footer">
+  <p>Rédigé automatiquement par <a href="#">Nova-Blog</a> &middot; 2026</p>
+</footer>
+</body>
+</html>

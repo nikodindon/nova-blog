@@ -10,10 +10,10 @@ Ton blog personnel automatisé — chaque soir, un article de blog est généré
 
 Chaque soir à 20h (avec retries à 21h, 22h, 23h si besoin), le script `daily_blog.py` :
 
-1. **Scrape tes sessions Hermès** — lit tous les messages `.jsonl` de la journée (Telegram + CLI)
+1. **Scrape tes sessions Hermès** — lit tous les fichiers `.json` et `.jsonl` de la journée (CLI + Telegram)
 2. **Collecte les commits Git** — scan tes repos (`Nova-Atlas`, `hermes-agent`, `hermes-workspace`, `nova-blog`)
 3. **Liste les fichiers travaillés** — fichiers modifiés dans la journée via Git
-4. **Envoie tout à MiniMax Cloud** — modèle `minimax-m2.7:cloud` via Ollama proxy
+4. **Envoie tout à MiniMax Cloud** — modèle `minimax-m2.7:cloud` via le proxy Ollama Cloud
 5. **Génère l'article en HTML** — structuré en 3 sections (`📌 L'actu du jour`, `💻 Ce qu'on a fait`, `🎯 Objectifs et suite`)
 6. **Injecte dans le template** — et écrit `articles/YYYY-MM-DD.html`
 7. **Met à jour l'index** — `articles/index.html` liste tous les articles
@@ -38,7 +38,14 @@ nova-blog/
 │   └── index.html         # Page des archives (accessibles via /archives)
 ├── scripts/
 │   ├── daily_blog.py      # Script principal — scrape + génère l'article du jour
-│   └── backfill.py        # Backfill — génère des articles pour des jours passés
+│   ├── backfill.py        # Backfill — génère des articles pour des jours passés
+│   ├── config_loader.py   # Charge la config (auth.json → config.yaml.local)
+│   └── setup_keys.py      # Bootstrap — vérifie les clés API et génère la config
+├── templates/
+│   └── article.html       # Template HTML de base
+├── config.yaml.example    # Config example (non versionné)
+├── .gitignore             # Ignore auth.json et config.yaml.local
+├── auth.json              # Clés API (NON COMMITTÉ — voir Configuration)
 └── serve.py               # Serveur web local
 ```
 
@@ -51,9 +58,34 @@ nova-blog/
 git clone https://github.com/nikodindon/nova-blog.git
 cd nova-blog
 
+# 1. Créer auth.json avec les clés API
+cp config.yaml.example config.yaml.local
+# → editer config.yaml.local avec OLLAMA_API_KEY
+
+# OU utiliser setup_keys.py (interactive)
+python3 scripts/setup_keys.py
+
 # Tester la génération du jour
 python3 scripts/daily_blog.py
 ```
+
+---
+
+## Configuration
+
+```bash
+# config.yaml.local (non versionné — ignoré par .gitignore)
+OLLAMA_URL     = "https://ollama.com/v1"   # Proxy Ollama Cloud
+OLLAMA_API_KEY = "ton-api-key"              # Clé MiniMax
+MODEL          = "minimax-m2.7:cloud"       # Modèle MiniMax
+SESSIONS_DIR   = ~/.hermes/sessions         # Dossier des sessions Hermès
+DAY_START_HOUR = 6                          # Heure de début de journée
+GIT_REPOS      = [Nova-Atlas, hermes-agent, hermes-workspace, nova-blog, ...]
+```
+
+**`config_loader.py`** détecte automatiquement `auth.json` (ancien format) et génère `config.yaml.local` au format YAML.
+
+Pour changer de provider LLM, remplace `OLLAMA_URL` et `OLLAMA_API_KEY` par ceux de ton choix (OpenRouter, Groq, etc.).
 
 ---
 
@@ -78,31 +110,25 @@ python3 scripts/backfill.py all
 
 ```bash
 python3 serve.py --port 5056
-# → http://localhost:5056/         (derniere journee)
+# → http://localhost:5056/         (dernière journée)
 # → http://localhost:5056/archives (tous les articles)
 ```
 
 ---
 
-## Configuration
+## Parsing des sessions
 
-Modifiable dans `scripts/daily_blog.py` et `scripts/backfill.py` :
+Le script lit les sessions Hermès dans plusieurs formats :
 
-```python
-OLLAMA_URL   = "http://localhost:11434"  # Proxy Ollama local
-MODEL        = "minimax-m2.7:cloud"      # Modele MiniMax
-SESSIONS_DIR = Path.home() / ".hermes" / "sessions"
-DAY_START_HOUR = 6                        # Heure de debut de journee
-GIT_REPOS    = [...]                      # Repos Git a scanner
-```
-
-Pour changer de provider LLM, remplace l'URL Ollama par celle de ton choix (OpenRouter, Groq, etc.) et le nom du modele.
+- **CLI** : fichiers `.jsonl` (un message par ligne)
+- **CLI** : fichiers `.json` (format single-JSON avec clé `messages` au top-level)
+- **Telegram** : fichiers `request_dump_*.json` (format nested avec `request.body.messages`)
 
 ---
 
-## deploiement
+## Déploiement
 
-Les articles sont du HTML statique pur — hebergeables n'importe ou :
+Les articles sont du HTML statique pur — hebergeables n'importe où :
 
 ```bash
 # GitHub Pages : push sur main, active GitHub Pages dans les settings
@@ -114,7 +140,7 @@ Les articles sont du HTML statique pur — hebergeables n'importe ou :
 
 ## Stack
 
-- **Generation** : Python 3 + MiniMax Cloud (`minimax-m2.7:cloud`) via Ollama proxy
+- **Génération** : Python 3 + MiniMax Cloud (`minimax-m2.7:cloud`) via Ollama proxy
 - **Template HTML** : design dark (Playfair Display + Source Sans 3)
-- **Planification** : cron jobs Hermes (20h, 21h, 22h, 23h)
-- **Source des donnees** : sessions Hermès `.jsonl` + Git log + Git name-only
+- **Planification** : cron jobs Hermès (20h, 21h, 22h, 23h)
+- **Source des données** : sessions Hermès (`.json` + `.jsonl` + Telegram dumps) + Git log + Git name-only

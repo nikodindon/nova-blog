@@ -1,0 +1,6 @@
+auth.json
+config.yaml
+config.yaml.local
+__pycache__/
+*.pyc
+.env
