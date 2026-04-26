@@ -99,14 +99,29 @@ def get_today():
     return date.today()
 
 
+def extract_date_from_filename(path):
+    """Extrait la date YYYY-MM-DD du nom de fichier session_YYYYMMDD_HHMMSS_*.json"""
+    import re
+    fname = path.name if isinstance(path, Path) else str(path)
+    m = re.search(r"(\d{4})(\d{2})(\d{2})", fname)
+    if m:
+        return f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
+    return ""
+
+
 def parse_session_file(path):
     """
     Handles THREE session file formats:
     1. session_*.json     — single JSON with 'messages' list, session_start at top
     2. request_dump_*.json — same as above, also has 'messages' in request.body.messages
     3. *.jsonl           — JSON Lines (legacy), one JSON object per line
+
+    Falls back to filename date when session_start is unreliable (e.g. session
+    started after midnight but filename still has the previous day's date).
     """
     messages = []
+    filename_date = extract_date_from_filename(path)
+
     try:
         with open(path, "r", encoding="utf-8") as f:
             raw = f.read()
@@ -124,13 +139,15 @@ def parse_session_file(path):
                     if m.get("role") in ("user", "assistant"):
                         content = m.get("content", "")
                         if isinstance(content, str) and len(content) > 2:
-                            # Per-message timestamp if available, else session_start
-                            ts = m.get("timestamp", session_ts)
+                            ts = m.get("timestamp")
+                            if not ts:
+                                # session_start may be from the next day if the session
+                                # ran past midnight — use filename date instead
+                                ts = filename_date if filename_date else session_ts
                             messages.append({"role": m["role"], "content": content[:500], "ts": ts})
                 return messages
 
             # request_dump format: messages are nested in request.body.messages
-            # (already covered above via "messages" key check, but handle explicitly)
             if "request" in obj and "body" in obj["request"]:
                 body = obj["request"]["body"]
                 if isinstance(body, dict) and "messages" in body:
@@ -139,11 +156,12 @@ def parse_session_file(path):
                         if m.get("role") in ("user", "assistant"):
                             content = m.get("content", "")
                             if isinstance(content, str) and len(content) > 2:
-                                ts = m.get("timestamp", session_ts)
+                                ts = m.get("timestamp")
+                                if not ts:
+                                    ts = filename_date if filename_date else session_ts
                                 messages.append({"role": m["role"], "content": content[:500], "ts": ts})
                     return messages
 
-            # If single-JSON but no messages key, skip (not a session file)
             return messages
 
         except json.JSONDecodeError:
@@ -159,7 +177,7 @@ def parse_session_file(path):
                 if obj.get("role") in ("user", "assistant"):
                     content = obj.get("content", "")
                     if isinstance(content, str) and len(content) > 2:
-                        ts = obj.get("timestamp", "")
+                        ts = obj.get("timestamp", filename_date)
                         messages.append({"role": obj["role"], "content": content[:500], "ts": ts})
             except json.JSONDecodeError:
                 continue
@@ -170,6 +188,12 @@ def parse_session_file(path):
 
 
 def filter_today_messages(messages, day):
+    """
+    Keep messages from `day` that are from 06:00 onwards.
+    Messages whose ts is a bare date (no time) bypass the hour check —
+    this handles sessions that spanned midnight and have a filename-derived
+    date instead of a real timestamp.
+    """
     filtered = []
     for msg in messages:
         ts_str = msg.get("ts", "")
@@ -178,8 +202,13 @@ def filter_today_messages(messages, day):
         try:
             dt = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
             dt = dt.replace(tzinfo=None)
-            if dt.date() == day and dt.hour >= DAY_START_HOUR:
-                filtered.append(msg)
+            if dt.date() != day:
+                continue
+            # Bare date (e.g. "2026-04-23") means no real time — include it
+            has_time = dt.hour or dt.minute or dt.second
+            if has_time and dt.hour < DAY_START_HOUR:
+                continue
+            filtered.append(msg)
         except Exception:
             continue
     return filtered

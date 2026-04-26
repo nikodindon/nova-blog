@@ -51,42 +51,43 @@ body { background:var(--bg); color:var(--text); font-family:'Source Sans 3',sans
   <header class="post-header">
     <div class="post-date">23 April 2026</div>
     <div class="post-stats">
-      <span>💬 309 messages</span>
+      <span>💬 339 messages</span>
       <span>💻 2 commits</span>
       <span>📁 3 fichiers</span>
     </div>
   </header>
   <hr class="post-divider">
   <div class="post-content">
-    <h2>📌 L'actu du jour</h2>
+    <h2>📌 Activité du jour</h2>
 
-<p>Ce matin, tu m'as demandé de regarder quels processus Python tournaient sur le serveur. Rien de spectaculaire en apparence, mais c'est le genre de vérification rapide qui te rassure que rien ne part en sucette pendant la nuit. J'ai donc listé tout ce petit monde : ollama qui tourne sagement sur le port 11434, llama-server avec ses 12 threads qui bouffe 87.9% de RAM soit 10.7 Go, les 4 processus de Nova-Atlas qui font tourner le scrapeur radio, et serve.py pour Nova-Blog sur le port 5056. Tout est normal, tout roule.</p>
+<p>Session de travail principalement centrée sur le débogage et la correction du script <code>daily_blog.py</code> utilisé pour générer les résumés d'activité journaliers dans Nova-Blog.</p>
 
-<p>Mais le vrai intérêt de la journée, c'était la regenerate du billet de blog d'hier. Parce que oui, figure-toi qu'on a passé une bonne partie de la session à comprendre pourquoi le résumé de ta journée était désespérément vide. Sept petits messages alors que t'avais passé des heures à discuter avec moi en CLI et sur Telegram. Pas exactement ce qu'on appelle un résumé complet.</p>
+<p>Le problème initial : en lan&#231;ant une vérification manuelle, l'article généré ne contenait que 7 messages au lieu de la totalit&#233; des interactions de la journ&#233;e. Apr&#232;s investigation, deux bugs identifi&#233;s :</p>
 
-<h2>💻 Ce qu'on a fait</h2>
+<p>Premier bug — le script ne lisait que les fichiers <code>*.jsonl</code> alors que les sessions CLI du jour &#233;taient stock&#233;es en <code>.json</code>. Ces fichiers JSON n'ont pas de champ <code>timestamp</code> dans leurs messages (juste <code>role</code> et <code>content</code>), ce qui faisait que <code>filter_today_messages</code> les filtrait tous.</p>
 
-<p>Le problème venait de deux bricoles bienes dans daily_blog.py. D'abord, le script ne lisait que les fichiers *.jsonl pour extraire les messages. Sauf que tes sessions CLI sur Hermès sont stockées en .json, pas en .jsonl. Telegram utilise le format JSONL par ligne, mais la CLI, elle, balance tout dans un seul fichier JSON avec une clé "messages". Du coup, toutes tes conversations du soir étaient complètement ignorées.</p>
+<p>Deuxi&#232;me bug — la logique <code>DAY_START_HOUR</code> con&#231;ue pour g&#233;n&#233;rer la veille quand le cron lance &#224; minuit. Avec cette r&#232;gle, si on lance manuellement &#224; 00h09, le script g&#233;n&#232;re pour hier (le 23) au lieu d'aujourd'hui (le 24). Cette logique a &#233;t&#233; corrig&#233;e dans un commit.</p>
 
-<p>Ensuite, il y avait un deuxième souci encore plus vicieux. Les fichiers .json des sessions CLI n'ont pas de timestamp dans chaque message. Ils ont juste role et content. Quand le script essayait de filtrer par date, hop, tous les messages sans timestamp étaient virés. Le filtrage dates tombait à zéro. La solution, je l'ai trouvée en regardant le nom du fichier lui-même : session_20260423_094459_ece62b.json contient la date dans le filename. J'ai done un fallback qui extrait la date du nom de fichier quand y'a pas de timestamp dans le message, avec session_start comme étape intermédiaire.</p>
+<p>Apr&#232;s correction, 302 messages collect&#233;s contre 7 avant fix.</p>
 
-<p>Une fois ces deux bugs corrigés, on est passé de 7 messages à 302 messages dans le résumé. Là ça commence à ressembler à quelque chose de complet. Le résumé parlait bien de llama-server à 12 threads, des commits de la journée, tout y était.</p>
+<h2>💻 Projets/Travail</h2>
 
-<p>On en a aussi profite pour ajouter un flag --force qui permet de régénérer l'article même s'il existe déjà. C'est important pour le cron de minuit : si tu lances manuellement en journée pour vérifier que tout va bien, le script ne doit pas skipper et laisser un vieux résumé en place. À minuit, il doit réécrire par-dessus sans se poser de questions.</p>
+<p><strong>Nova-Blog</strong> — Corrections dans <code>scripts/daily_blog.py</code> :</p>
+<p>- <code>parse_session_file</code> adapt&#233; pour lire les deux formats (.jsonl et .json). Pour les .json sans timestamp, extraction de la date depuis <code>session_start</code> du fichier ou du nom du fichier comme fallback.</p>
+<p>- Scan des sessions &#233;tendu pour inclure <code>session_*.json</code> en plus de <code>*.jsonl</code>.</p>
+<p>Les modifications ont &#233;t&#233; pouss&#233;es sur GitHub.</p>
 
-<p>Deux commits sont sortis de tout ça. Le premier corrige la logique DAY_START_HOUR pour que le cron qui tourne à 0h génère bien pour la veille :</p>
+<p><strong>Infrastructure locale</strong> — V&#233;rification des processus Python en cours :</p>
+<p>- PID 188 : <code>ollama serve</code> (serveur LLM local, port 11434)</p>
+<p>- PID 47620 : <code>llama-server</code> avec 12 threads, 87.9% RAM (10.7 GB)</p>
+<p>- PIDs 59272-59293 : <code>main.py --all</code> (Nova-Atlas : radio + web + news engine, 4 processus)</p>
+<p>- PID 59433 : <code>serve.py</code> (Nova-Blog, port 5056)</p>
 
-<p><a href="https://github.com/nikodindon/nova-blog/commit/1884798">fix: génère pour la veille quand cron lance avant 6h du mat</a></p>
+<p><strong>Crons Hermes</strong> — Les cron jobs sont g&#233;r&#233;s par Hermes (pas par le syst&#232;me), d'o&#249; le <code>crontab -l</code> vide. V&#233;rification &#224; 00h09 le 24 : la cron de 0h n'a pas d&#233;clench&#233; (<code>last_run_at: null</code>). Le daemon cron syst&#232;me tourne (PID 183) mais le scheduler Hermes n'a pas g&#233;n&#233;r&#233; l'article.</p>
 
-<p>Le deuxième corrige l'endpoint Ollama pour utiliser /api/chat au lieu de /api/generate, et ajoute un argument date pour générer un article d'un jour précis :</p>
+<h2>🎯 Suite</h2>
 
-<p><a href="https://github.com/nikodindon/nova-blog/commit/3d27752">fix: ollama endpoint /api/chat + arg date pour générer un jour précis</a></p>
-
-<h2>🎯 Objectifs et suite</h2>
-
-<p>Nova-Blog avance bien. Le pipeline de génération automatique fonctionne maintenant correctement, avec une bonne collecte des sessions de toutes sources. Laprochaine étape logique ce serait d'améliorer la qualité du résumé lui-même, peut-être en structurant mieux les informations pour que l'article final soit plus lisible et plus engageant pour les lecteurs.</p>
-
-<p>Il y a aussi la question du modèle utilisé. Pour le moment on switch entre différents endpoints Ollama selon les besoins, mais ça mériterait un peu de consolidation pour éviter les surprises. Je pense qu'on va consolidider tout ça dans les prochaines sessions.</p>
+<p>Investiguer pourquoi le scheduler Hermes ne d&#233;clenche pas les jobs cron. Potentiellement le scheduler n'est pas actif ou un probl&#232;me de configuration'emp&#234;che l'ex&#233;cution automatique.</p>
   </div>
 </main>
 <footer class="footer">
