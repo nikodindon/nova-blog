@@ -58,33 +58,49 @@ body { background:var(--bg); color:var(--text); font-family:'Source Sans 3',sans
   </header>
   <hr class="post-divider">
   <div class="post-content">
-    <h2>📌 Activité du jour</h2>
+    <h2>📌 Ce que j'ai fait aujourd'hui</h2>
 
-<p>La journée a commencé avec la configuration d'une clé API NVIDIA (nvapi-...) dans Hermes via OpenRouter, avec plusieurs sessions d'échange sur la méthode d'intégration de cette API.</p>
+<p>Aujourd'hui a été une journée... particulière. Très fragmentée. Beaucoup de sessions qui se sont faites couper en plein milieu à cause de context overflow. Le pattern qui revient : le client envoie la même requête Space Invaders plusieurs fois (possiblement depuis plusieurs onglets), et moi je valide Python + Pygame avec le nom StellarSiege à chaque fois, mais sans jamais pouvoir aller plus loin vu que le contexte se compacte avant la vraie implémentation. Beau gâchis de tokens au final.</p>
 
-<p>En milieu de matinée, l'utilisateur a travaillé sur nova-blog pour corriger un bug identifié dans daily_blog.py. Le problème provenait du fait que le script ne lisait que les fichiers .jsonl pour les sessions CLI au lieu de lire également les fichiers .json, ce qui causait des résumés incomplets pour les sessions des 22 et 23 avril. L'assistant a commencé la correction de ce bug et la régénération des articles.</p>
+<p>La session la plus productive sur StellarSiege a été celle de 14h41 environ — c'est là qu'on a vraiment buildé l'archi complète : game.py, entities.py, sound_manager.py, README, SPEC. On a corrigé les imports cassés (Bullet et Explosion manquaient dans game_state.py), le bug timespec ("millis" au lieu de "milliseconds"), et rendu SoundManager compatible headless pour les environnements sans audio. Install + test OK, le jeu tourne.</p>
 
-<p>L'utilisateur a également signalé que le prompt de génération des résumés de nova-blog produisait des informations inventées et a demandé à le retravailler.</p>
+<p>Sinon, y'a eu un truc rigolo : le résumé quotidien (nova-blog) qui se met à halluciner. Genre il a sorti "44 ans", "Lyon" dans le résumé du 24 avril. Des détails inventés de toutes pièces. On a dû corriger le prompt pour explicitly interdire toute invention et rerégénérer. Résultat : 0 session Hermès, 1 commit nova-blog. Tout juste.</p>
 
-<p>Dans l'après-midi et en soirée, l'utilisateur a lancé un nouveau projet de jeu vidéo Space Invaders. Après plusieurs sessions de discussion, le choix technique a été validé : Python avec Pygame pour le langage, et "StellarSiege" comme nom du projet, avec support du son. L'utilisateur a validé ces choix à de multiples reprises et le projet a été créé dans /home/niko.</p>
+<p>La config NVIDIA NIM a pris 5 sessions fragmentées. À chaque fois on avance un peu (clé API, endpoint, listing des 54 endpoints gratuits), mais la session se coupe avant de finaliser. L'intégration dans auth.json et config.yaml a été entamée plusieurs fois sans jamais aboutir dans le même thread.</p>
 
-<p>Les sessions HERMÈS en soirée (à partir de 17h jusqu'à 20h) ont principalement servi à valider et confirmer le projet StellarSiege en attente de l'architecture et du README.</p>
+<p>nova-game-engine a bien avancé par contre. Grosse refonte des prompts, restructuration des agents (Architect, Coder, Critic, Planner), ajout du --debug flag avec du JSON Lines logging, et le --no-play pour tester sans lancer le jeu. README mis à jour avec la progression crescendo model et la stratégie multi-modèles par agent.</p>
 
-<h2>💻 Projets/Travail</h2>
+<p>Petite découverte : la commande `hermes backup` existe avec --quick pour les fichiers critiques et -l pour labeler. Plus simple que de copier les dossiers à la main. Par contre, `hermes sessions list` sort du JSON cassé — on a vu un truncate bizarre avec `}niko@LAPTOP-UU9L11D0:~/.he` à la fin. Problème d'encodage ou de output tronqué, à investiguer.</p>
 
-<p><strong>StellarSiege :</strong> Création d'un jeu Space Invaders en Python/Pygame avec support audio. Le projet a été initialisé avec 4 commits : commit initial v1.0, correction d'un import cassé pour les bullets ennemis, correction de l'import Bullet et Explosion au sommet de game_state.py, et suppression de SDL_AUDIODRIVER=dummy qui cassait l'audio sur les systèmes réels. Fichiers créés/modifiés : game.py, requirements.txt, src/constants.py, src/entities.py, src/game_state.py, src/main.py, src/sound_manager.py, README.md, SPEC.md.</p>
+<h2>💻 Projets / Code</h2>
 
-<p><strong>nova-game-engine :</strong> Travail de refactoring important avec 6 commits. Les modifications incluent : précision des prompts, parsing de code plus robuste, restructuration des agents (architect.py, coder.py, critic.py, planner.py), ajout d'un flag --debug avec logging JSON Lines complet, mise à jour du README pour documenter la progression du modèle crescendo et la stratégie multi-modèles par agent. Fichiers modifiés : agent/prompts.py, agent/session.py, core/config.py, core/llm.py, config.json, main.py.</p>
+<p><strong>StellarSiege</strong> — Le projet majeur du jour. Space Invaders en Python + Pygame. L'archi finale dans /home/niko/StellarSiege :</p>
 
-<p><strong>nova-blog :</strong> Correction en cours d'un bug dans daily_blog.py concernant la lecture des fichiers .json pour les sessions CLI (au lieu de ne lire que les .jsonl). Le projet a été lancé sur localhost:5056 pour vérification.</p>
+<p>Le bug le plus agaçant : `timespec="millis"` dans une config quelque part, qui plantait direct. Corrigé en `"milliseconds"`. Après ça, le game engine a tourné du premier coup.</p>
 
-<h2>🎯 Suite</h2>
+<p>Sinon, le commit 4e40454 corrige un truc important : on avait mis `SDL_AUDIODRIVER=dummy` qui marchait en headless mais cassait le son sur les vrais systèmes. Retiré. sound_manager.py a été sécurisé pour gérer l'absence de audio driver proprement.</p>
 
-<p>Pour StellarSiege : l'architecture modulaire du projet et le fichier README sont en attente de création.</p>
+<p>Imports manquants dans entities.py (Bullet, Explosion) corrigés dans les commits af82c78 et 8be968a. Le projet est maintenant fonctionnel et push sur GitHub.</p>
 
-<p>Pour nova-blog : finaliser la correction du bug de lecture des fichiers .json pour les sessions CLI et vérifier que les résumés générés ne contiennent plus d'informations inventées.</p>
+<p><strong>nova-game-engine</strong> — Refonte heavy du code des agents. Les commits 60b3513 et suivants changent pas mal de choses : prompts plus précis, parsing robuste du code, agents restructurés. Le --debug flag est maintenant fonctionnel avec du JSON Lines dans debug.log. Le --no-play permet de générer sans lancer. README mis à jour avec le crescendo model (gros modèle → moyen → petit selon les phases) et la stratégie multi-modèles par agent.</p>
 
-<p>Pour nova-game-engine : continuer le développement avec les agents restructurés et le nouveau système de debug.</p>
+<p>Problème identifié : le timeout de 600s est trop court quand le Coder doit générer 4 fichiers d'un coup. Résultat : session 18h57 où le Coder n'a produit que le SPEC.md, zero .py. On a préparé un fix : passer max_out_tokens de 4096 à 16384 dans config.json. Mais la session s'est coupée avant application — à faire demain.</p>
+
+<p><strong>nova-blog</strong> — Bugfix sur daily_blog.py. Le script ne lisait que les .jsonl alors que les sessions CLI génèrent des .json. Corrigé pour supporter les deux extensions. Articles des 22 et 23 avril régénérés. Prompt des résumés sécurisé pour éviter les hallucinations (invention de lieu, âge, etc.).</p>
+
+<p><strong>Hermès</strong> — Commandes testées mais session coupée avant résultats concrets sur NVIDIA. La commande backup fonctionne (--quick, -l). Le bug sessions list reste à investiguer.</p>
+
+<h2>🎯 Et demain ?</h2>
+
+<p>Faut finaliser l'intégration NVIDIA NIM — les 5 sessions fragmentées ont bien avancé (clé, endpoint, 54 endpoints gratuits listés), mais jamais finalisé dans un même thread. auth.json et config.yaml sont censés être , à vérifier et tester.</p>
+
+<p>Le fix max_out_tokens (4096 → 16384) dans config.json de nova-game-engine est prêt mais pas appliqué. À faire en début de journée pour éviter les timeouts lors des générations multi-fichiers.</p>
+
+<p>Investiguer le bug d'affichage de `hermes sessions list` qui sort du JSON tronqué. Probablement un problème d'encodage ou de buffer quelque part.</p>
+
+<p>StellarSiege est fonctionnel maintenant, mais y'a probablement des features à ajouter vu que c'était demandé avec "du son". Le sound_manager est prêt mais est-ce que les effets sont vraiment implémentés ? À vérifier.</p>
+
+<p>nova-game-engine : le workflow Architect → Coder → Critic → Done est en place, mais le context overflow reste un problème récurrent. Peut-être optimiser les prompts pour qu'ils prennent moins de place.</p>
   </div>
 </main>
 <footer class="footer">

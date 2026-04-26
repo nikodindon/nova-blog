@@ -58,25 +58,37 @@ body { background:var(--bg); color:var(--text); font-family:'Source Sans 3',sans
   </header>
   <hr class="post-divider">
   <div class="post-content">
-    
+    <h2>📌 Ce que j'ai fait aujourd'hui</h2>
 
-<h2>📌 Activité du jour</h2>
-<p>La journée a commencé avec le clonage de Nova-Atlas et l'objectif d'ajouter le support de llama-server dans config.yaml avec installation de llama.cpp dans WSL. La gateway a été démarrée mais la connexion à Telegram échouait sur les IPs primary et fallback d'api.telegram.org.</p>
-<p>En début de soirée, le projet Icecast ne s'affichait toujours pas et l'utilisateur s'est demandé pourquoi Docker n'était pas installé. Plusieurs sessions ont porté sur la vérification des logs d'Icecast, la question de l'installation de Docker dans WSL (confirmée comme possible via version statically-built), et le souhait de tester les modèles Ollama déjà présents sous Windows (dans /mnt/c/Users/niko_/.ollama/) pour bénéficier de meilleures performances.</p>
-<p>Plusieurs sessions ont ensuite signalé que llama-server n'apparaissait pas dans htop, nécessitant une vérification des logs de la console principale de Nova-Atlas.</p>
-<p>En soirée avancée, le fichier requirements.txt a été pushé plusieurs fois avec l'ensemble des dépendances Python (edge-tts, PyYAML, requests, beautifulsoup4, lxml, flask, jinja2, markdown) conformément au README.</p>
-<p>En nuit, multiples pulls de Nova-Atlas ont tous été marqués avec un ERROR capturé par le background process de surveillance. Le debug a porté sur le parsing des fichiers .json sans timestamp, en extrayant la date du nom du fichier. Enfin, demande d'intégrer toutes les interactions CLI et Telegram dans le résumé, et de gérer les résumés déjà effectués dans la journée.</p>
+<p>Au niveau réseau, la journée a mal commencé pour Nova-Atlas. Le gateway tournait nickel mais le bot Telegram était dans les choux — impossible de joindre <code>api.telegram.org</code>, que ce soit en primary ou en fallback. C'était un problème réseau pur, pas un bug dans le code. Le bot était down tout le matin.</p>
 
-<h2>💻 Projets/Travail</h2>
-<p>nova-blog : deux commits pushés. Le premier (3d27752) ajoute le support de l'endpoint /api/chat d'Ollama et un argument date pour générer un article pour un jour précis. Le second (1884798) corrige la génération pour la veille quand le cron lance avant 6h du matin. Fichiers modifiés : scripts/daily_blog.py, articles/2026-04-16.html, articles/index.html.</p>
-<p>Nova-Atlas : plusieurs sessions de debugging autour du service Icecast manquant (empêchant le pipe ffmpeg de se connecter), problème à résoudre sans Docker ni sudo. Multiples pulls avec erreurs capturées en arrière-plan. Intégration du support de llama-server en cours.</p>
+<p>L'après-midi a été consacré à un ajout plutôt cool pour Nova-Atlas : intégrer <code>llama-server</code> comme provider alternatif à Ollama. Puisque j'ai un APU AMD, pas de CUDA dispo et ROCm n'était pas testé, j'ai buildé llama.cpp en mode CPU-only. J'ai récupéré le modèle Mistral:7b (~4.1 Go) depuis Windows pour les tests en local histoire de pas tout retélécharger. Les mods ont été pushées et la config.yaml mise à jour avec l'option provider.</p>
 
-<h2>🎯 Suite</h2>
-<p>Résoudre le problème du service Icecast sans utiliser Docker ni sudo pour restaurer le pipe ffmpeg.</p>
-<p>Debugger les erreurs ERROR capturées par le background process lors des pulls Nova-Atlas.</p>
-<p>Rendre llama-server visible et fonctionnel (actuellement non détecté dans htop).</p>
-<p>Finaliser l'intégration de llama-server dans config.yaml avec llama.cpp dans WSL.</p>
-<p>Tester les modèles Ollama depuis Windows pour comparer les performances.</p>
+<p>Le soir, gros focus sur Icecast. Première tentative : balancer l'exécutable Windows icecast.exe dans WSL. Raté complet — DLLs manquantes au runtime. J'ai ensuite essayé Docker dans WSL mais sudo demandait un password en mode non-interactif, donc j'ai récupéré un binaire static à la place. Le build de l'image Icecast en local a foiré avec Alpine, mais après avoir résolu les problèmes de root dans le Dockerfile, Icecast a fini par tourner sur le port 8000. Petit win à 21h08.</p>
+
+<p>Ensuite ça a dérivé sur du debug de nova-atlas et c'est là que les galères ont commencé. Le trio llama-server / ffmpeg / RSS marchait plus comme prévu. Le problème principal : ffmpeg mourait en boucle — il relançait toutes les secondes environ. Aucune musique dans le dossier <code>music/</code>, les flux RSS retournaient 0 article. Du coup llama-server n'avait strictement rien à traiter. On creusait la config des chemins music/ quand les sessions se coupaient. Y'a eu plusieurs sessions quasi identiques avec des context compactions — le classique quand le contexte déborde et que le handoff entre windows foire.</p>
+
+<p>Un peu plus tard j'ai cloné et setup nova-atlas depuis GitHub. requirements.txt a été pushé avec toutes les dépendances (edge-tts, flask, jinja2, etc.). J'ai aussi demandé comment switcher entre sessions par titre — j'ai eu un briefing sur /sessions, /switch et grep pour naviguer.</p>
+
+<p>Vers 22h58, pull de la dernière version depuis GitHub puis lancement de <code>main.py --all</code>. Nouveau ratage : llama-server répondait plus (Connection refused) et Ollama filtrait du contenu chelou (PFAS, L214, etc.) avec des warnings et des timeout. La Radio marchait par contre. Plusieurs sessions quasi identiques avec des context compactions encore.</p>
+
+<p>23h00, restart de Nova-Atlas. Cette fois tout a démarré nickel — Radio Icecast, Web, News engine. Petit win bien mérité après toutes ces galères de connexion Ollama. J'ai demandé un résumé de la journée et ça a généré proprement.</p>
+
+<p>Puis vers 23h45, debug d'un vrai bug dans <code>parse_session_file</code>. Les fichiers <code>.json</code> des sessions CLI n'ont pas de <code>timestamp</code> dans les messages — juste <code>role</code> + <code>content</code>. Du coup <code>filter_today_messages</code> filtrait tout et il restait 0 message. Fix : extraire la date du nom de fichier. J'ai aussi demandé que le résumé fusionne CLI + Telegram, et qu'un lancement manuel pendant la journée écrase le résumé de minuit au lieu de skip.</p>
+
+<p>Dernier problème de la nuit : Nova-Atlas tourne mais le pipe ffmpeg → Icecast échoue en boucle — "Icecast introuvable". Tentative de contourner en passant par un binaire Windows Icecast piloté depuis WSL. Toujours bloqué, le flux audio monte jamais.</p>
+
+<p>Côté nova-blog, deux commits cools : un fix pour que le générateur crée l'article de la veille quand le cron lance avant 6h du mat, et une mise à jour de l'endpoint Ollama vers <code>/api/chat</code> avec un argument date pour générer un jour précis. Le blog avait 6 articles dispos et le backfill.py tournait.</p>
+
+<h2>💻 Projets / Code</h2>
+
+<p><strong>Nova-Atlas</strong> — Grosse journée de debug et d'itération. Le gros du travail a été d'ajouter <code>llama-server</code> comme provider alternatif à Ollama. Build CPU-only pour APU AMD (pas CUDA, ROCm pas testé), modèle Mistral:7b copié depuis Windows (~4.1 Go). Config.yaml modifié avec l'option provider, mods pushées sur GitHub. Le problème réseau du matin (api.telegram.org injoignable) a mis le bot Telegram down pendant plusieurs heures. Le soir, le gateway a redémarré proprement mais le pipe ffmpeg → Icecast reste planté — le flux audio monte jamais, ffmpeg meurt en boucle, et les flux RSS retournent 0 article. Plusieurs sessions de debug avec des context compactions à cause du contexte qui débordait. Fix temporaire du bug parse_session_file : extraction de la date depuis le nom de fichier au lieu de chercher un champ timestamp inexistant dans les JSON CLI.</p>
+
+<p><strong>Nova-blog</strong> — Deux commits aujourd'hui. Le premier (3d27752) corrige l'endpoint Ollama vers <code>/api/chat</code> et ajoute un argument date pour générer un article d'un jour précis. Le deuxième (1884798) corrige la génération pour la veille quand le cron lance avant 6h du mat. Scripts modifiés : <code>scripts/daily_blog.py</code>, articles mis à jour pour le 16 avril. Le cron de résumé auto à minuit avec retry à 1h et 2h fonctionne. 6 articles dispos sur le blog.</p>
+
+<h2>🎯 Et demain ?</h2>
+
+<p>Les priorities sont claires : le pipe ffmpeg vers Icecast qui marche toujours pas — c'est le blockers principal pour que la Radio fonctionne vraiment. Faudra trancher entre Docker Desktop ou le combo ezstream+darkice vu que l'exécutable WindowsIcecast dans WSL a planté. Corriger aussi les flux RSS qui retournent 0 article et peupler le dossier music/ avec des fichiers valides. Le fix de parse_session_file devra être mergé et le résumé fusionné CLI+Telegram devra être implémenté pour que les sessions soient plus propres. Et côté réseau, comprendre pourquoi api.telegram.org était injoignable le matin — potentiellement un truc à surveiller si ça se reproduit.</p>
   </div>
 </main>
 <footer class="footer">

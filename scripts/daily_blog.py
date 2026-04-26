@@ -319,11 +319,15 @@ def summarize_sessions(sessions_by_file, day):
     for i in range(0, len(items), BATCH):
         batch = items[i:i+BATCH]
         batch_text = "\n\n".join(
-            f"--- {fname} ---\n{text[:800]}" for fname, text in batch
+            f"--- {fname} ---\n{text[:1500]}" for fname, text in batch
         )
         prompt = (
-            "Tu dois résumer CHACUNE des sessions ci-dessous en exactement 1 phrase française, "
-            "sans préambule. Format : [filename] Résumé.\n\n"
+            "Tu résumes chaque session ci-dessous en 2-3 phrases synthétiques. Pour chaque session, capte :\n"
+            "1) Le projet ou sujet principal (codes, outils, topics)\n"
+            "2) Ce qui a été fait ou décidé — avec juste assez de détail pour que ce soit utile\n"
+            "3) Le résultat ou la conclusion (哪怕 un半島)\n\n"
+            "Ton : conversationnel entre collègues, pas administratif. Évoque les erreurs, les surprises, les wins.\n"
+            "Format : une ligne vide entre chaque session résumée. Pas de liste à puces.\n\n"
             f"SESSIONS:\n{batch_text}"
         )
         payload = {"model": model, "messages": [
@@ -364,22 +368,23 @@ def summarize_sessions(sessions_by_file, day):
 
 def summarize_content(sessions_data, git_data, files_data, day):
     system_prompt = (
-        f"Tu génères un résumé de l'activité journalière d'un développeur.\n\n"
+        f"Tu écris le récit de la journée de Niko, développeur solo. "
+        f"Ta voix : un pote tech qui a suivi sa journée, pas un rédacteur. "
+        f"Tu parles à la première personne ('j'ai', 'on a', 'Niko a').\n\n"
         f"RÈGLES ABSOLUES :\n"
         f"- Réponds en HTML BRUT — pas de markdown, pas de bloc de code, pas de ```html\n"
         f"- Chaque paragraphe dans <p>, sections dans <h2>\n"
-        f"- Sois FACTUEL et CONCIS — n'invente RIEN qui ne soit pas dans les données\n"
-        f"- N'ajoute PAS de détails personnels (lieu, âge, situation) — utilise uniquement l'activité fournie\n"
-        f"- COUVRE TOUTES LES SESSIONS de la journée — matin ET soir, CLI ET Telegram\n"
-        f"- Si plusieurs sessions/sujets, fais plusieurs paragraphes par section\n"
-        f"- N'impose PAS de limite de mots — couvre tout ce qui est pertinent\n"
-        f"- PAS de conclusion типа 'En résumé'\n"
+        f"- SOIS VIVANT : évoque les galères, les wins, les surprises, les moments marrants\n"
+        f"- Ton conversationnel, comme un co-développeur qui raconte — pas un rapport hebdomadaire\n"
+        f"- Exhaustif : couvre tout ce qui apparaît dans les sessions (，哪怕 un truc qui semble banal)\n"
+        f"- N'invente RIEN — ne fais que transcrire ce qui est dans les données\n"
+        f"- Ne mentionne PAS de détails personnels (lieu, âge, situation financière)\n"
         f"- Date : {day.isoformat()}\n\n"
         f"STRUCTURE :\n"
-        f"<h2>📌 Activité du jour</h2> ... paragraphes ...\n"
-        f"<h2>💻 Projets/Travail</h2> ... paragraphes ...\n"
-        f"<h2>🎯 Suite</h2> ... paragraphes ...\n\n"
-        f"CONSEIL : Plus la journée est chargée, plus le résumé doit être détaillé."
+        f"<h2>📌 Ce que j'ai fait aujourd'hui</h2> ... récits en paragraphes, ton décontracté\n"
+        f"<h2>💻 Projets / Code</h2> ... paragraphes par projet, avec les décisions tech\n"
+        f"<h2>🎯 Et demain ?</h2> ... ce qui est en cours, ce qui reste à caler\n\n"
+        f"CONSEIL : Plus la journée est riche, plus tu写得长. Pas de limite."
     )
 
     user_prompt = (
