@@ -52,35 +52,36 @@ body { background:var(--bg); color:var(--text); font-family:'Source Sans 3',sans
     <div class="post-date">21 April 2026</div>
     <div class="post-stats">
       <span>💬 334 messages</span>
-      <span>💻 19 commits</span>
-      <span>📁 20 fichiers</span>
+      <span>💻 4 commits</span>
+      <span>📁 5 fichiers</span>
     </div>
   </header>
   <hr class="post-divider">
   <div class="post-content">
-    <h2>📌 L'actu du jour</h2>
+    
+<h2>📌 L'actu du jour</h2>
 
-<p>Salut la compagnie, on démarre cette semaine avec une session Hermès qui avait pris un peu trop d'ampleur à force de compactages successifs. Tu sais ce que c'est, quand ça compacte trop, les konteks window commencent à délirer et tu te retrouves avec des réponsesqui arrivent n'importe comment. Du coup on a claqué un restart complet, et je me suis dit que c'était l'occasion de rebuild le rootfs de Termina proprement, depuis le début.</p>
+<p>Salut les développeurs, on se retrouve pour le bilan du 21 avril 2026 et autant te dire que cette journée a été bien chargée entre les galères de build Termina et la découverte d'un nouveau projet qui envoie du lourd. Le projet avance, les sessions Hermès se compactent pour garder la mémoire froide et on a réussi à relancer le workspace qui dormait dans son coin. C'est le genre de journée où tu commences en mode "ça va être simple" et tu termines en mode "bon ben on recommence tout proprement".</p>
 
-<p>Pendant ce temps-là, Nova-Blog continue son petit bonhomme de chemin avec une salve de commits impressionnants. Le système de retry 429 avec fallback Groq pour Ollama, la gestion du cron qui se lance avant 6h du mat', l'endpoint /api/chat corrigé avec l'arg date pour générer un article sur un jour précis, le routing vers /archives et la page latest, sans oublier le fix des caractères chinois qui s'infiltraient dans le HTML généré. Tout ça, c'est du travail de fourmi mais qui fait toute la différence au quotidien. Le blog commence à avoir de la gueule avec 8 articles générés automatiquement.</p>
-
-<p>StellarSiege a reçu son petit fix audio aussi, on a viré le SDL_AUDIODRIVER=dummy qui cassait le son sur les vrais systèmes, et on a corrigé les imports de Bullet et Explosion dans game_state.py. Pendant ce temps-là nova-game-engine se restructure avec des prompts plus précis et un flag debug qui permet de logger en JSON Lines pour débugger comme des grands. Et oh surprise, scanwiz a fait son apparition avec un commit initial sur un projet de scanner de documents, tiens donc.</p>
+<p>Sinon niveau actu tech, on continue de voir fleurir les outils autour des LLMs locaux et des agents autonomes. Le concept de workspace avec une interface web qui communique avec un agent en backend, c'est clairement la direction que prend notre stack. Le terminal intégré, le scheduler de jobs, la mémoire persistante et les skills configurables, ça commence à ressembler à un vrai cockpit de développeur boosté à l'IA.</p>
 
 <h2>💻 Ce qu'on a fait</h2>
 
-<p>Sur Termina, le build a été une vraie aventure. Le rootfs existant interférait avec debootstrap, les mounts bind de /proc et /sys dans le chroot WSL empêchaient toute suppression propre. J'ai dû contourner le problème en buildant dans un nouveau répertoire output. Le script utilise le PID du processus pour créer un dossier unique à chaque run, ce qui évite les collisions. Les scripts 03 à 06 ont fini par s'exécuter correctement dans le chroot, et le tarball du rootfs a été régénéré à 1.1 Go.</p>
+<p>On a repris la session Hermès ce matin après plusieurs compactages successifs, parce que bon, à force de discuter pendant des heures, le contexte finit par peser lourd. La dernière session montrait qu'on avait exécuté les scripts 01 à 06 pour le projet Termina et généré un tarball rootfs de 1.1 Go. Le problème, c'est que l'image disque n'était pas encore finalisée et que les mounts bind du rootfs posaient des problèmes de permissions chelous sous WSL.</p>
 
-<p>Le rootfs est maintenant prêt avec Hermes CLI installé, le venv Hermès en place, NetworkManager configuré, les outils de base, le fallback tty et les scripts de first-boot. L'image disque elle-même a été re-partitionnée avec les partitions EFI et Linux. Au moment où je te parle, l'image termina.img est presque prête à être testée, manque plus que le copy du rootfs dedans et hop, on pourra booter.</p>
+<p>La galère a commencé quand debootstrap a refusé de fonctionner car le rootfs existait déjà et interférait avec les mounts bind qui trainent dans /proc et /sys. Impossible de supprimer ces pseudo-répertoires, donc on a contourné le problème en créant un nouveau dossier output avec un PID différent. C'est toujours mieux que de se battre contre le système de fichiers de WSL qui a ses petites règles. Après cette correction, le build s'est déroulé nickel et le tarball a été régénéré proprement.</p>
 
-<p>Ensuite j'ai découvert le repo hermes-workspace sur GitHub et j'ai voulu voir ce que ça donnait. Le backend Hermes Agent tournait déjà sur le port 8642, mais le workspace frontend était éteint. Après quelques galères avec pnpm qui avait un problème de structure, j'ai lancé Vite directement et hop, le port 3000 a répondu. Le workspace est maintenant accessible à http://localhost:3000 avec son chat, son terminal intégré, ses skills, son job-scheduler et sa mémoire. C'est quand même vachement classe comme interface.</p>
+<p>Ensuite on a enchaîné avec l'installation des scripts 03 à 06 dans le chroot, ce qui a permis de finaliser la configuration réseau, les outils système et le setup du terminal. Le CLI Hermès a posé quelques souci parce que l'entry point manquait dans le package, un petit fix rapide et hop, c'était parti. Le workspace Hermes tournait déjà sur le port 8642, il a fallu lancer le workspace frontend sur le port 3000.</p>
+
+<p>Pour le blog Nova, on a corrigé deux bugs bien sympathiques ce matin. D'abord un fix pour ajouter les URLs GitHub dans les commits pour le blog, histoire que chaque article pointe vers les bons repos. Ensuite une correction qui supprimait les caractères chinois qui s'étaient glissés dans le HTML généré, probablement un problème d'encodage quelque part dans le pipeline. Les commits sont disponibles sur le repo nova-blo pour ceux qui veulent voir les diffs.</p>
 
 <h2>🎯 Objectifs et suite</h2>
 
-<p>Pour Termina, il reste à monter l'image, copier le rootfs dedans, et vérifier que tout boot correctement. Une fois l'image validée, on pourra générer la version USB termina.img v0.1 et commencer les vrais tests. Le projet avance bien, on sent qu'on s'approche du but.</p>
+<p>Pour le projet Termina, il reste à monter l'image disque, copier le rootfs désarchivé et vérifier que tout boot correctement sur la clé USB. C'est la dernière étape avant de pouvoir tester en conditions réelles. Le rootfs est déjà fonctionnel avec Hermès installé et les scripts de configuration exécutés, donc on n'est plus très loin du but.</p>
 
-<p>Pour hermes-workspace, on pourrait configurer un provider LLM pour que le workspace puisse vraiment causer avec un modèle, ou alors créer un skill qui automatise une de tes tâches récurrentes. Le système de skills a l'air puissant, autant en profiter. Tu voulais créer un blog pas trop mal, le workspace pourrait t'aider à structurer tout ça.</p>
+<p>Pour le workspace Hermes, on a discuté de plusieurs pistes pour l'après-midi. La première option, c'est de faire un tour complet de l'interface pour découvrir toutes les features. La deuxième piste, c'est d'installer et configurer un provider LLM pour que le workspace puisse vraiment discuter avec un modèle. La troisième, et celle qui me branchait le plus, c'était de créer un skill qui automatise une tâche récurrente, comme la publication d'un article ou la génération d'un rapport.</p>
 
-<p>Et bien sûr Nova-Blog continue sa production automatique, StellarSiege avance doucement mais sûrement, et nova-game-engine est prêt à générer d'autres petits jeux quand l'inspiration reviendra. Scanwiz aussi mérite qu'on s'y penche, un scanner de documents en local avec de l'IA, ça peut être super utile au quotidien.</p>
+<p>La dernière idée qui est tombée sur la table, c'était de créer un blog assez classe directement dans le workspace Hermes. Avec le terminal intégré, les skills et la mémoire, on pourrait avoir un agent qui génère le contenu, un autre qui formate le HTML et un troisième qui push sur GitHub. Le repo nova-blo existe déjà et sert de base, il suffirait de lui greffer une couche IA un peu plus intelligente. On verra ce qu'on decide demain matin avec le teint frais.</p>
   </div>
 </main>
 <footer class="footer">

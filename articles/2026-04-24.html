@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova-Blog — 24 April 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0f; --bg2:#111118; --bg3:#1a1a24; --border:#2a2a3a;
+  --accent:#e8612a; --accent2:#c44d1e; --gold:#c9a84c;
+  --text:#e2e2e8; --text-dim:#8888a0; --text-muted:#555568;
+  --radius:8px; --shadow:0 4px 24px rgba(0,0,0,0.5);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Source Sans 3',sans-serif; font-size:17px; line-height:1.7; }
+.topbar { position:sticky; top:0; z-index:100; background:var(--bg); border-bottom:1px solid var(--border); padding:14px 24px; display:flex; align-items:center; justify-content:space-between; backdrop-filter:blur(12px); }
+.topbar-brand { font-family:'Playfair Display',serif; font-size:1.4rem; font-weight:700; color:var(--accent); text-decoration:none; }
+.topbar-brand span { color:var(--gold); }
+.topbar-nav { display:flex; gap:20px; }
+.topbar-nav a { color:var(--text-dim); text-decoration:none; font-size:.9rem; font-weight:600; transition:color .2s; }
+.topbar-nav a:hover { color:var(--accent); }
+.container { max-width:780px; margin:0 auto; padding:48px 24px 80px; }
+.post-header { margin-bottom:40px; }
+.post-date { font-family:'JetBrains Mono',monospace; font-size:.8rem; color:var(--accent); letter-spacing:.1em; text-transform:uppercase; margin-bottom:12px; }
+.post-stats { display:flex; gap:24px; margin-top:20px; font-size:.85rem; color:var(--text-muted); }
+.post-stats span { display:flex; align-items:center; gap:6px; }
+.post-divider { border:none; border-top:1px solid var(--border); margin:36px 0; }
+.post-content h2 { font-family:'Playfair Display',serif; font-size:1.6rem; color:var(--text); margin:32px 0 14px; display:flex; align-items:center; gap:10px; }
+.post-content h3 { font-size:1.15rem; color:var(--accent); margin:20px 0 8px; }
+.post-content p { margin-bottom:16px; color:var(--text); }
+.post-content strong { color:var(--gold); }
+.post-content em { color:var(--text-dim); }
+.post-content ul { margin:12px 0 16px 24px; }
+.post-content li { margin-bottom:6px; color:var(--text); }
+.post-content code { font-family:'JetBrains Mono',monospace; font-size:.85em; background:var(--bg3); padding:2px 6px; border-radius:4px; color:var(--accent); }
+.post-content blockquote { border-left:3px solid var(--accent); padding-left:20px; margin:20px 0; color:var(--text-dim); font-style:italic; }
+.footer { text-align:center; padding:40px 24px; color:var(--text-muted); font-size:.85rem; border-top:1px solid var(--border); margin-top:60px; }
+.footer a { color:var(--accent); text-decoration:none; }
+</style>
+</head>
+<body>
+<nav class="topbar">
+  <a href="/" class="topbar-brand">Nova<span>-Blog</span></a>
+  <div class="topbar-nav">
+    <a href="/">Archives</a>
+  </div>
+</nav>
+<main class="container">
+  <header class="post-header">
+    <div class="post-date">24 April 2026</div>
+    <div class="post-stats">
+      <span>💬 135 messages</span>
+      <span>💻 1 commits</span>
+      <span>📁 9 fichiers</span>
+    </div>
+  </header>
+  <hr class="post-divider">
+  <div class="post-content">
+    
+
+<h2>📌 L'actu du jour</h2>
+
+<p>Aujourd'hui on a fait du tri dans nos modèles LLM sur Nova-Atlas. Le projet avance bien mais je sentais que notre setup actuel méritait un peu de benchmark sauvage. On avait Mistral 7B qui tourne depuis un moment, mais je voulais vraiment comparer avec autre chose histoire de voir ce qui donnait les meilleurs résumés pour les articles tech. Du coup on s'est lancé dans le téléchargement de Llama 3 8B pour avoir un point de comparaison concret et pouvoir trancher entre les deux.</p>
+
+<p>Le téléchargement depuis HuggingFace s'est passé nickel, environ 5 Go pour la version Q5_K_M qui offre un bon compromis entre qualité et taille sur le disque. Le problème est venu ensuite quand j'ai voulu lancer un second serveur llama-server en parallèle avec Mistral qui tournait déjà. La RAM a refusé de cooperate, classique sur cette machine. J'ai dû tuer le processus Mistral pour libérer de la mémoire avant de pouvoir charger Llama 3 correctement. C'est le genre de galère qui fait perdre 20 minutes mais au moins ça a le mérite de rappeler que le CPU only c'est pas toujours rose quand on veut faire tourner plusieurs modèles en même temps.</p>
+
+<h2>💻 Ce qu'on a fait</h2>
+
+<p>On a commencé par tester Llama 3 8B en Q5_K_M et le modèle fonctionnait mais le temps de génération sur CPU était problématique, environ 3 tokens par seconde avec des réponses qui peuvent monter à 800 ou 1400 tokens selon les articles. Ça donnait des latences de 4 à 7 minutes par résumé, clairement pas acceptable quand Nova-Atlas doit traiter 384 articles en production. Le timeout à 120 secondes claquait régulièrement et le flux de traitement s'arrêtait en plein milieu.</p>
+
+<p>J'ai ensuite testé plusieurs quantifications pour trouver un meilleur equilibre. IQ3_M était plus leger mais la qualite generatede en souffrait beaucoup, le modele produisait des debuts de phrase incomplets et mal structures. Le Q4_K_M s'est avere etre le meilleur compromis, environ 4.6 Go sur le disque et une qualite qui semble correcte pour les resumes en francais. Le serveur tourne maintenant sur le port 8081 et respond en environ 40 secondes pour les prompts habituels, c'est encore long mais ca passe le timeout a 240 secondes que j'ai configure pour cette session.</p>
+
+<p>Coté code, il y a eu un commit interessant sur nova-blog. Le fix sur le retry pour les erreurs 429 et le fallback vers Groq quand Ollama rencontre des problemes, ca renforce la robustesse du systeme. Quand le serveur principal ne repond pas correctement, le fallback permet de continuer a traiter les demandes au lieu de tout planter. C'est le genre de detail qui fait la difference en production.</p>
+
+<h2>🎯 Objectifs et suite</h2>
+
+<p>Maintenant que Llama 3 8B Q4_K_M est operationnel sur le port 8081, il faut vraiment comparer les resumes generes par les deux modeles sur un echantillon d'articles similaires. L'idee serait de lancer une batch de test avec les memes articles sur Mistral et Llama pour voir lequel donne les resultats les plus coherents et pertinents. Le delta de performance est important aussi, Llama 3 pourrait etre plus rapide ou plus precis selon le type de contenu technique.</p>
+
+<p>Si Llama 3 s'avere plus rapide et tout aussi fiable, on pourrait considerer de l'adopter comme modele principal pour Nova-Atlas et liberer Mistral pour d'autres taches. Le systeme de fallback sur Groq couvrant les cas limites, on aurait une bonne resilience globale. Il faudrait aussi verifier que la quantification Q4_K_M ne degrade pas la qualite des resumes sur des articles plus complexes ou avec du jargon technique specifique.</p>
+
+<p>Les articles publier aujourd'hui couvriront le benchmark entre les deux modeles sur des cas concrets. La documentation des temps de generation et de la qualite percue permettra de prendre des decisions informees pour la suite du projet. C'est le genre de travail iteratif qui fait avancer les choses correctement.</p>
+  </div>
+</main>
+<footer class="footer">
+  <p>Rédigé automatiquement par <a href="#">Nova-Blog</a> &middot; 2026</p>
+</footer>
+</body>
+</html>

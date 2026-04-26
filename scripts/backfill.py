@@ -49,8 +49,14 @@ YEAR = 2026
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def clean_chinese_text(text: str) -> str:
+    """Supprime les caractères non-latins qui polluent le HTML."""
     text = re.sub(r'[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af\u3000-\u303f\uff00-\uffef]+', '', text)
-    return re.sub(r'[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af\u3000-\u303f\uff00-\uffef]+', '', text)
+    text = re.sub(r'[\u0600-\u06ff\u0750-\u077f]+', '', text)
+    text = re.sub(r'[\u0400-\u04ff\u0500-\u052f]+', '', text)
+    text = re.sub(r'[\u0370-\u03ff]+', '', text)
+    text = re.sub(r'[\u0530-\u058f]+', '', text)
+    text = re.sub(r'[\u0590-\u05ff]+', '', text)
+    return text
 
 
 def ollama_chat(messages, model=None, max_retries=5):
@@ -192,7 +198,7 @@ def get_git_today(repo_path, day):
     try:
         result = subprocess.run(
             ["git", "log", f"--since={day} {DAY_START_HOUR}:00",
-             "--until=23:59", "--pretty=format:%H|%s|%an|%ad",
+             f"--until={day} 23:59:59", "--pretty=format:%H|%s|%an|%ad",
              "--date=iso", str(repo_path)],
             capture_output=True, text=True, timeout=10, cwd=repo_path
         )
@@ -223,6 +229,7 @@ def get_recent_files(home, day, max_files=20):
         try:
             result = subprocess.run(
                 ["git", "log", f"--since={day} {DAY_START_HOUR}:00",
+                 f"--until={day} 23:59:59",
                  "--name-only", "--pretty=format:%n", str(repo)],
                 capture_output=True, text=True, timeout=10, cwd=repo
             )

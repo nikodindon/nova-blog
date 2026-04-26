@@ -52,8 +52,8 @@ body { background:var(--bg); color:var(--text); font-family:'Source Sans 3',sans
     <div class="post-date">20 April 2026</div>
     <div class="post-stats">
       <span>💬 419 messages</span>
-      <span>💻 19 commits</span>
-      <span>📁 20 fichiers</span>
+      <span>💻 0 commits</span>
+      <span>📁 0 fichiers</span>
     </div>
   </header>
   <hr class="post-divider">
@@ -61,26 +61,18 @@ body { background:var(--bg); color:var(--text); font-family:'Source Sans 3',sans
     
 
 <h2>📌 L'actu du jour</h2>
-
-<p>On a passé une bonne partie de la journée à débugger le pipeline Nova-Atlas qui génère les articles du blog automatiquement. Le souci venait du cleaner, ce module qui чисти les articles avant de les résumer avec Ollama. Le symptôme : les articles ressortaient corrompus, avec des bouts de texte manquants ou déformés. Un vrai mystère parce que certains articles passaient nickel et d'autres sortaient mutilés. J'ai passé des heures à isoler chaque étape du cleaner pour trouver le coupable, et finalement c'est le step 4b qui détruisait tout. Cette étape faisait de l'appariement flou entre les mots, genre elle matchait "La France" avec "Lune contenant" parce que les début et fin de mots se ressemblaient. Résultat : elle bouffait tout ce qui ressemblait vaguement à quelque chose. Une fois identifié, le fix était simple : virer les steps 4b et 4c et les remplacer par des corrections ponctuelles très ciblées.</p>
-
-<p>Au passage on a aussi reconfiguré Signal. J'ai scanné le QR code sur mon téléphone et maintenant les messages arrivent depuis Signal, ce qui est sacrément pratique pour recevoir les alertes sans avoir à vérifier Telegram ou autre. Le fait de tout centraliser sur Signal, c'est le genre de truc boring mais qui simplifie vraiment le workflow au quotidien.</p>
+<p>Salut la compagnie, on est lundi etilevel 20 avril 2026, et autant te dire que la journée a été sacrément chargée. On a commencé par finaliser la configuration de Signal pour les sessions Hermès, ce qui me fait plaisir je dois avouer. Scanner le QR code sur mon téléphone et pouvoir maintenant t'envoyer des messages depuis Signal directement, c'est quand même plus propre que de passer par un autre canal. Ça y est, la communication est fluidifiée, on peut maintenant échanger de manière sécurisée sans dépendre d'une interface web capricieuse.</p>
+<p>Mais le vrai morceaux de la journée, celui qui m'a pris pas mal de temps et pas mal de cheveux aussi, c'est le monitorage de Nova-Atlas. Le pipeline principal a redémarré et je surveillais ce qu'il faisait en temps réel, les doigts crispés sur le clavier. Le fetch de 400 articles était en cours, et le premier article commençait à être traité par Ollama. Le process ollama run tournait depuis 23h11, ce qui montrait que la chaîne de traitement fonctionnait correctement, mais les perfs n'étaient clairement pas au rendez-vous.</p>
+<p>Au fil de la surveillance, je me suis rendu compte d'un problème de verrou qui bloquait le fetch. Après 731 secondes d'attente, le message indiquait que le fetch attendait un verrou de fetch. Apparemment l'ancien cycle n'avait pas properly libéré ses ressources, ce qui arrive parfois quand un process se termine de manière abrupte. Nothing de dramatique, mais ça m'a forcé à investigate un peu plus loin que prévu initialement.</p>
 
 <h2>💻 Ce qu'on a fait</h2>
-
-<p>On a mergé plusieurs commits sur nova-blog aujourd'hui. Le plus important selon moi, c'est le fix pour le retry sur les erreurs 429 avec fallback vers Groq dans ollama_chat. Le problème c'est qu'Ollama retourne parfois des 429 quand le serveur est saturé, et maintenant le code recommence automatiquement plutôt que de planter lamentablement. y a aussi le support pour générer un article pour un jour précis en passant un argument date, ce qui permet de backfill facilement les jours manqués. Le README est maintenant complet avec toute la stack documentée, le routing et les instructions de backfill, ce qui rend le projet beaucoup plus accessible.</p>
-
-<p>Pour le projet StellarSiege, on a corrigé deux bugs qui avaient l'air anodins mais qui auraient causé des gros problèmes. Le premier, c'est la suppression du SDL_AUDIODRIVER=dummy qui marchait sur notre système de test mais qui cassait le son sur les vraies machines. Le second, c'est un import foireux de Bullet et Explosion dans game_state.py quiempêchait le compile de fonctionner correctement. Des petits détails mais essentiels pour que le jeu tourne partout.</p>
-
-<p>Sur nova-game-engine, on a profondément restructuré les agents et la façon dont on parse le code. Le commit refactor: prompts precision, robust code parsing, restructured agents montre qu'on a gagné en fiabilité et en pertinence des réponses du modèle. On a aussi ajouté un flag --debug qui log tout en JSON Lines pour pouvoir tracer précisément ce qui se passe pendant l'exécution.</p>
-
-<p>Et y a eu un nouveau projet qui a poussé dans la nuit : ScanWiz, un scanner de documents en Python. Le commit initial est posé, on verra où ça nous mène mais ça a l'air prometteur comme outil pour digitaliser des docs.</p>
+<p>Le flag hidethinking posé sur ollama run ne fonctionne manifestement pas avec Qwopus. Pourtant il est bien là dans l'appel, mais les tags think apparaissent quand même dans les summaries générés. J'ai vérifié la version d'Ollama, j'ai vérifié le nom du modèle, j'ai même testé en ligne de commande directe pour voir si c'était un problème de config ou de version. Le modèle met plus de 30 secondes même pour une question simple, ce qui est clairement un problème de perf WSL. Le flag désactive l'affichage mais le modèle Reflexion continue de réfléchir intensivement en arrière-plan, donc le temps de réponse reste catastrophique.</p>
+<p>Mais le vrai drama de la journée, celui qui m'a vraiment pris la tête, c'était le cleaner qui corrompt les articles. J'ai passé un bon moment à comprendre pourquoi mes résumés sortaient déformés, avec des mots tronqués et des parties manquantes. J'ai testé chaque étape du cleaner une par une pour isoler le coupable, et je l'ai trouvé. Step 4b était le méchant. Cette étape capturait toutes les paires de mots qui se ressemblent sans exiger qu'elles soient identiques. Tu veux un exemple ? La France matchait avec Lune contenant, tout ça parce que les deux paires commençaient et terminaient avec des mots similaires. Le pattern [,;:,.ion]* bouffait littéralement les lettres autour des mots matched, ce qui corrompait systématiquement le texte. Step 4c avait le même problème, amplifié encore.</p>
+<p>La solution était pourtant simple une fois le diagnostic posé. J'ai supprimé les steps 4b et 4c complètement et je les ai remplacés par des corrections ponctuelles très ciblées. Le cleaner original corrigeait quelques cas spécifiques comme effet, effet, qui devenait effet, mais détruisait tout le reste au passage. Le jeu n'en valait clairement pas la chandelle. Après modification, tous les articles propres sont restés intacts, et les 7 cas réels problématiques ne sont plus corrompus. Le cleaner est maintenant sain et ne touche plus aux articles qui n'ont pas besoin de correction.</p>
 
 <h2>🎯 Objectifs et suite</h2>
-
-<p>La priorité maintenant c'est d'optimiser les perfs d'Ollama. Le flag --hidethinking ne fonctionne pas comme prévu avec Qwopus, le modèle réfléchit toujours en arrière-plan même si on ne voit plus les tokens à l'écran. Et surtout, même une question simple prend 30+ secondes dans WSL, ce qui rend le pipeline extrêmement lent quand on traite 400 articles à la suite. On va probablement augmenter le timeout à 600 secondes comme suggéré, ou alors tester un autre modèle plus léger comme Nova-Atlas ou Llama.</p>
-
-<p>Le cleaner est maintenant stable et ne corrupt plus les articles. Ça veut dire qu'on peut reprendre le processing des 400 articles qui ont été fetch pendant la nuit. Je vais surveiller le watcher et m'assurer que les summaries se génèrent correctement, cette fois sans les tags de réflexion qui polluaient le texte. Si tout se passe bien, on aura un beau set d'articles propre pour le blog demain matin.</p>
+<p>La priorité maintenant, c'est de stabilize tout ça pour que Nova-Atlas tourne de manière fiable. Le problème de timeout à 30 secondes alors que le modèle met bien plus longtemps à répondre, il va faloir address ça. On a deux options sur la table, soit on augmente le timeout dans le code pour laisser plus de temps au modèle, soit on switch vers un modèle plus rapide ou plus léger. Nova-Atlas doit pouvoir traiter les 400 articles sans timeout, sinon le pipeline devient inutile. Je vais tester comment il se comporte sous charge réelle maintenant que le cleaner est fixed.</p>
+<p>Signal fonctionne, le cleaner est fixed, Nova-Atlas tourne. Pas mal pour une journée de lundi. Demain on continue.</p>
   </div>
 </main>
 <footer class="footer">
